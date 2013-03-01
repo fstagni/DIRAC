@@ -29,10 +29,9 @@ import unittest
 from DIRAC.Core.Base.Script import parseCommandLine
 parseCommandLine()
 ## from DIRAC
-from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client import PathFinder
 ## SUT
-from DIRAC.DataManagementSystem.private.StrategyHandler import *
+from DIRAC.DataManagementSystem.private.StrategyHandler import StrategyHandler, Graph
 
 ########################################################################
 class StrategyHandlerTests(unittest.TestCase):
@@ -122,7 +121,9 @@ class StrategyHandlerTests(unittest.TestCase):
     del self.bands
     del self.failedFiles
     
-  def test_01_ctor( self ):
+class Ctor( StrategyHandlerTests ):
+
+  def test_success( self ):
     """ constructor + update test """
     sHandler = StrategyHandler( self.configPath, self.bands, self.channels, self.failedFiles )
     self.assertEqual( isinstance( sHandler, StrategyHandler), True )
@@ -143,8 +144,11 @@ class StrategyHandlerTests(unittest.TestCase):
     self.assertEqual( channel["Value"].channelName, "CERN-CERN" )
     self.assertEqual( channel["Value"].size,  self.channels[1]["Size"] )
   
+class Strategies( StrategyHandlerTests ):
+
   def test_02_Strategies( self ):
     """ test strategies """
+
     sHandler = StrategyHandler( self.configPath, self.bands, self.channels, self.failedFiles ) 
 
     ## simple - wrong args
@@ -197,6 +201,8 @@ class StrategyHandlerTests(unittest.TestCase):
     self.assertEqual( tree["OK"], True )
     self.assertEqual( tree["Value"], {2L: {'Ancestor': False, 'Strategy': 'DynamicThroughput', 'DestSE': 'CNAF-USER', 'SourceSE': 'CERN-USER'}})
 
+class ReplicationTree( StrategyHandlerTests ):
+
   def test_03_replicationTree( self ):
     """ test replication tree """
     sHandler = StrategyHandler( self.configPath, self.bands, self.channels, self.failedFiles )
@@ -206,7 +212,7 @@ class StrategyHandlerTests(unittest.TestCase):
     tree = tree["Value"]
     self.assertEqual( tree, { 48L: {'Ancestor': 14L, 'Strategy': 'MinimiseTotalWait', 'DestSE': 'PIC-USER', 'SourceSE': 'RAL-USER'},
                               14L: {'Ancestor': False, 'Strategy': 'MinimiseTotalWait', 'DestSE': 'RAL-USER', 'SourceSE': 'CNAF-USER'}})
-    for channelID, repDict in tree.items():
+    for _channelID, repDict in tree.items():
       sourceSE = repDict["SourceSE"]
       targetSE = repDict["DestSE"]
       ftsChannel = sHandler.ftsGraph.findChannel( sourceSE, targetSE )
@@ -226,7 +232,7 @@ class StrategyHandlerTests(unittest.TestCase):
     self.assertEqual( tree, { 48L: {'Ancestor': 7L, 'Strategy': 'MinimiseTotalWait', 'DestSE': 'PIC-USER', 'SourceSE': 'RAL-USER'},
                               7L:  {'Ancestor': False, 'Strategy': 'MinimiseTotalWait', 'DestSE': 'RAL-USER', 'SourceSE': 'CERN-USER'}} )
 
-    for channelID, repDict in tree.items():
+    for _channelID, repDict in tree.items():
       sourceSE = repDict["SourceSE"]
       targetSE = repDict["DestSE"]
       ftsChannel = sHandler.ftsGraph.findChannel( sourceSE, targetSE )
@@ -246,6 +252,8 @@ if __name__ == "__main__":
 
   testLoader = unittest.TestLoader()
   suite = testLoader.loadTestsFromTestCase( StrategyHandlerTests )
-  suite = unittest.TestSuite( [ suite ] )
-  unittest.TextTestRunner(verbosity=3).run(suite)
+  suite.addTest( unittest.defaultTestLoader.loadTestsFromTestCase( Ctor ) )
+  suite.addTest( unittest.defaultTestLoader.loadTestsFromTestCase( Strategies ) )
+  suite.addTest( unittest.defaultTestLoader.loadTestsFromTestCase( ReplicationTree ) )
+  testResult = unittest.TextTestRunner( verbosity = 2 ).run( suite )
 
