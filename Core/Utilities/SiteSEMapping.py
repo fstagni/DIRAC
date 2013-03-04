@@ -35,7 +35,8 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
     gridDomains = gridDomains['Value']
 
   # discriminating on the domains list
-  gridDomains = list( set( gridDomainsSelected ) & set( gridDomains ) )
+  if gridDomainsSelected:
+    gridDomains = list( set( gridDomainsSelected ) & set( gridDomains ) )
   gLogger.debug( 'Grid Domains are: %s' % ( ', '.join( gridDomains ) ) )
 
   # getting only those sites pertaining to the selected domains
