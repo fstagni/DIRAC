@@ -13,9 +13,12 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
       {'LCG.CERN.ch':['CERN-RAW','CERN-RDST',...]}
       If gridDomains is specified, result is restricted to those Grid domains.
   '''
+  if type( gridDomainsSelected ) == type( '' ):
+    gridDomainsSelected = [gridDomainsSelected]
+
   siteSEMapping = {}
-  
-  #get the sites list
+
+  # get the sites list
   sites = getSites()
   if not sites['OK']:
     gLogger.warn( 'Problem retrieving the list of sites' )
@@ -23,19 +26,19 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
   else:
     sites = sites['Value']
 
-  #getting the domains list
+  # getting the domains list
   gridDomains = getResourceDomains()
   if not gridDomains['OK']:
     gLogger.warn( 'Problem retrieving grid domains' )
     return gridDomains
   else:
     gridDomains = gridDomains['Value']
-  
+
   # discriminating on the domains list
-  gridDomains = list( set( gridDomains ) - set( gridDomainsSelected ) )
+  gridDomains = list( set( gridDomainsSelected ) & set( gridDomains ) )
   gLogger.debug( 'Grid Domains are: %s' % ( ', '.join( gridDomains ) ) )
-  
-  #getting only those sites pertaining to the selected domains
+
+  # getting only those sites pertaining to the selected domains
   sitesList = list( sites )
   for site in sites:
     siteDomains = getSiteDomains( site )
@@ -98,7 +101,7 @@ def getSESiteMapping( gridName = '' ):
   gLogger.debug( 'Grid Types are: %s' % ( ', '.join( gridDomains ) ) )
   for grid in gridDomains:
     sites = gConfig.getSections( '/Resources/Sites/%s' % grid )
-    if not sites['OK']: #gConfig returns S_ERROR for empty sections until version
+    if not sites['OK']:  # gConfig returns S_ERROR for empty sections until version
       gLogger.warn( 'Problem retrieving /Resources/Sites/%s section' % grid )
       return sites
     if sites:
