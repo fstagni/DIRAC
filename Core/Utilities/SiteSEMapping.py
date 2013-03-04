@@ -186,6 +186,7 @@ def isSameSiteSE( se1, se2 ):
   return S_OK( False )
 
 #############################################################################
+
 def getSEsForCountry( country ):
   ''' Determines the associated SEs from the country code
   '''
