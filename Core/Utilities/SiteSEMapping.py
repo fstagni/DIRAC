@@ -32,8 +32,7 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
     gridDomains = gridDomains['Value']
   
   # discriminating on the domains list
-  gridDomains = list(set(gridDomains) - set(gridDomainsSelected))
-
+  gridDomains = list( set( gridDomains ) - set( gridDomainsSelected ) )
   gLogger.debug( 'Grid Domains are: %s' % ( ', '.join( gridDomains ) ) )
   
   #getting only those sites pertaining to the selected domains
@@ -43,17 +42,20 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
     if not siteDomains['OK']:
       return siteDomains
     else:
-      if not set( siteDomains ) & set( gridDomains ):
+      siteDomains = siteDomains['Value']
+      if not ( set( siteDomains ) & set( gridDomains ) ):
         sitesList.remove( site )
+  gLogger.debug( 'Grid Sites selected: %s' % ( ', '.join( sitesList ) ) )
 
   for site in sitesList:
     res = Resources().getStorageElements( site )
     if not res['OK']:
-      gLogger.debug( res['Message'] )
+      gLogger.error( res['Message'] )
     else:
       siteSEMapping[site] = res['Value']
 
   # Add Sites from the SiteLocalSEMapping in the CS
+  gLogger.verbose( "Now adding sites => SEs from Operations section" )
   cfgLocalSEPath = cfgPath( 'SiteLocalSEMapping' )
   opsHelper = Operations()
   result = opsHelper.getOptionsDict( cfgLocalSEPath )
