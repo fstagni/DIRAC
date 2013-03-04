@@ -8,17 +8,11 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Path        import cfgPath
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations  import Operations
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources   import Resources, getResourceDomains, getSites, getSiteDomains
 
-def getSiteSEMapping( gridDomainsSelected = [] ):
-  ''' Returns a dictionary of all sites and their localSEs as a list, e.g.
-      {'LCG.CERN.ch':['CERN-RAW','CERN-RDST',...]}
-      If gridDomains is specified, result is restricted to those Grid domains.
+#############################################################################
+
+def getSitesForDomains( gridDomainsSelected = [] ):
+  ''' get the sites list for the given domains
   '''
-  if type( gridDomainsSelected ) == type( '' ):
-    gridDomainsSelected = [gridDomainsSelected]
-
-  siteSEMapping = {}
-
-  # get the sites list
   sites = getSites()
   if not sites['OK']:
     gLogger.warn( 'Problem retrieving the list of sites' )
@@ -51,6 +45,32 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
         sitesList.remove( site )
   gLogger.debug( 'Grid Sites selected: %s' % ( ', '.join( sitesList ) ) )
 
+  return S_OK( sitesList )
+
+#############################################################################
+
+def getSiteSEMapping( gridDomainsSelected = [], operationallyAttached = True ):
+  ''' Returns a dictionary of all sites and their localSEs as a list, e.g.
+      {'LCG.CERN.ch':['CERN-RAW','CERN-RDST',...]}
+      If gridDomains is specified, result is restricted to those Grid domains.
+      The operationally attached SEs (found in the /Operations section of CS) are by default returned
+  '''
+  if type( gridDomainsSelected ) == type( '' ):
+    if gridDomainsSelected:
+      gridDomainsSelected = gridDomainsSelected.split( ',' )
+    else:
+      gridDomainsSelected = []
+
+  siteSEMapping = {}
+
+  # getting the sites list
+  sitesList = getSitesForDomains( gridDomainsSelected )
+  if not sitesList['OK']:
+    return sitesList
+  else:
+    sitesList = sitesList['Value']
+
+  gLogger.verbose( "Now adding sites => SEs from Resources section" )
   for site in sitesList:
     res = Resources().getStorageElements( site )
     if not res['OK']:
@@ -59,63 +79,55 @@ def getSiteSEMapping( gridDomainsSelected = [] ):
       siteSEMapping[site] = res['Value']
 
   # Add Sites from the SiteLocalSEMapping in the CS
-  gLogger.verbose( "Now adding sites => SEs from Operations section" )
-  cfgLocalSEPath = cfgPath( 'SiteLocalSEMapping' )
-  opsHelper = Operations()
-  result = opsHelper.getOptionsDict( cfgLocalSEPath )
-  if result['OK']:
-    mapping = result['Value']
-    for site in mapping:
-      ses = opsHelper.getValue( cfgPath( cfgLocalSEPath, site ), [] )
-      if not ses:
-        continue
-      if gridDomainsSelected and site not in sitesList:
-        continue
-      if site not in siteSEMapping:
-        siteSEMapping[site] = []
-      for se in ses:
-        if se not in siteSEMapping[site]:
-          siteSEMapping[site].append( se )
+  if operationallyAttached:
+    gLogger.verbose( "Now adding sites => SEs from Operations section" )
+    cfgLocalSEPath = cfgPath( 'SiteLocalSEMapping' )
+    opsHelper = Operations()
+    result = opsHelper.getOptionsDict( cfgLocalSEPath )
+    if result['OK']:
+      mapping = result['Value']
+      for site in mapping:
+        ses = opsHelper.getValue( cfgPath( cfgLocalSEPath, site ), [] )
+        if not ses:
+          continue
+        if gridDomainsSelected and site not in sitesList:
+          continue
+        if site not in siteSEMapping:
+          siteSEMapping[site] = []
+        for se in ses:
+          if se not in siteSEMapping[site]:
+            siteSEMapping[site].append( se )
 
   return S_OK( siteSEMapping )
 
-def getSESiteMapping( gridName = '' ):
+#############################################################################
+
+def getSESiteMapping( gridDomainsSelected = [], operationallyAttached = False ):
   ''' Returns a dictionary of all SEs and their associated site(s), e.g.
       {'CERN-RAW':'LCG.CERN.ch','CERN-RDST':'LCG.CERN.ch',...]}
       Although normally one site exists for a given SE, it is possible over all
       Grid types to have multiple entries.
-      If gridName is specified, result is restricted to that Grid type.
-      Assumes CS structure of: /Resources/Sites/<GRIDNAME>/<SITENAME>
+      If gridDomainsSelected is specified, result is restricted to that Grid domain.
   '''
   seSiteMapping = {}
-  gridDomains = gConfig.getSections( '/Resources/Sites/' )
-  if not gridDomains['OK']:
-    gLogger.warn( 'Problem retrieving sections in /Resources/Sites' )
-    return gridDomains
 
-  gridDomains = gridDomains['Value']
-  if gridName:
-    if not gridName in gridDomains:
-      return S_ERROR( 'Could not get sections for /Resources/Sites/%s' % gridName )
-    gridDomains = [gridName]
+  sitesSEs = getSiteSEMapping( gridDomainsSelected, operationallyAttached = operationallyAttached )
+  if not sitesSEs:
+    return sitesSEs
+  else:
+    sitesSEs = sitesSEs['Value']
 
-  gLogger.debug( 'Grid Types are: %s' % ( ', '.join( gridDomains ) ) )
-  for grid in gridDomains:
-    sites = gConfig.getSections( '/Resources/Sites/%s' % grid )
-    if not sites['OK']:  # gConfig returns S_ERROR for empty sections until version
-      gLogger.warn( 'Problem retrieving /Resources/Sites/%s section' % grid )
-      return sites
-    if sites:
-      for candidate in sites['Value']:
-        siteSEs = gConfig.getValue( '/Resources/Sites/%s/%s/SE' % ( grid, candidate ), [] )
-        for se in siteSEs:
-          if se not in seSiteMapping:
-            seSiteMapping[se] = []
-          seSiteMapping[se].append( candidate )
+  for site, SEs in sitesSEs.iteritems():
+    for SE in SEs:
+      if SE not in seSiteMapping:
+        seSiteMapping[SE] = []
+      if site not in seSiteMapping[SE]:
+        seSiteMapping[SE].append( site )
 
   return S_OK( seSiteMapping )
 
 #############################################################################
+
 def getSitesForSE( storageElement, gridName = '' ):
   ''' Given a DIRAC SE name this method returns a list of corresponding sites.
       Optionally restrict to Grid specified by name.
@@ -136,6 +148,7 @@ def getSitesForSE( storageElement, gridName = '' ):
 
 
 #############################################################################
+
 def getSEsForSite( siteName ):
   ''' Given a DIRAC site name this method returns a list of corresponding SEs.
   '''
@@ -150,6 +163,7 @@ def getSEsForSite( siteName ):
   return S_OK( [] )
 
 #############################################################################
+
 def isSameSiteSE( se1, se2 ):
   ''' Check if the 2 SEs are from the same site
   '''
