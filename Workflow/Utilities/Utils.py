@@ -12,7 +12,7 @@ from DIRAC.Core.Workflow.Step import StepDefinition
 #############################################################################
 
 def getStepDefinition( stepName, modulesNameList = [], importLine = """""", parametersList = [] ):
-  ''' Given a name, a list of modules name, and a list of parameters , returns a step definition.
+  ''' Given a name, a list of modules name, and a list of parameters, returns a step definition.
       Remember that Step definition = Parameters + Module Instances
   '''
 

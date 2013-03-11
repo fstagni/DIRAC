@@ -24,14 +24,10 @@
    Note that several executables can be provided and wil be executed sequentially.
 """
 
-__RCSID__ = "$Id$"
-
 import re, os, types, urllib
 
 from DIRAC                                                    import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Workflow.Parameter                            import Parameter
-from DIRAC.Core.Workflow.Module                               import ModuleDefinition
-from DIRAC.Core.Workflow.Step                                 import StepDefinition
 from DIRAC.Core.Workflow.Workflow                             import Workflow
 from DIRAC.Core.Base.API                                      import API
 from DIRAC.Core.Utilities.ClassAd.ClassAdLight                import ClassAd
@@ -42,6 +38,7 @@ from DIRAC.Core.Utilities.Subprocess                          import shellCall
 from DIRAC.Core.Utilities.List                                import uniqueElements
 from DIRAC.Core.Utilities.SiteCEMapping                       import getSiteForCE, getSiteCEMapping
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations      import Operations
+from DIRAC.Workflow.Utilities.Utils                           import getStepDefinition, addStepToWorkflow
 
 COMPONENT_NAME = '/Interfaces/API/Job'
 
@@ -61,7 +58,7 @@ class Job( API ):
     if gConfig.getValue( self.section + '/LogLevel', 'DEBUG' ) == 'DEBUG':
       self.dbg = True
 
-    #gConfig.getValue('Tier0SE-tape','SEName')
+    # gConfig.getValue('Tier0SE-tape','SEName')
     self.stepCount = 0
     self.owner = 'NotSpecified'
     self.name = 'Name'
@@ -72,13 +69,13 @@ class Job( API ):
     if ret['OK'] and 'group' in ret['Value']:
       vo = getVOForGroup( ret['Value']['group'] )
     self.group = vo
-    self.site = 'ANY' #ANY
-    #self.setup = 'Development'
+    self.site = 'ANY'  # ANY
+    # self.setup = 'Development'
     self.origin = 'DIRAC'
     self.stdout = stdout
     self.stderr = stderr
     self.logLevel = 'info'
-    self.executable = '$DIRACROOT/scripts/dirac-jobexec' # to be clarified
+    self.executable = '$DIRACROOT/scripts/dirac-jobexec'  # to be clarified
     self.addToInputSandbox = []
     self.addToOutputSandbox = []
     self.addToInputData = []
@@ -87,10 +84,10 @@ class Job( API ):
                       'MinCPUTime':   'other.NAME<=VALUE',
                       'Site':         'other.NAME=="VALUE"',
                       'Platform':     'other.NAME=="VALUE"',
-                      #'BannedSites':  '!Member(other.Site,BannedSites)', #doesn't work unfortunately
+                      # 'BannedSites':  '!Member(other.Site,BannedSites)', #doesn't work unfortunately
                       'BannedSites':  'other.Site!="VALUE"',
                       'SystemConfig': 'Member("VALUE",other.CompatiblePlatforms)'}
-    ##Add member to handle Parametric jobs
+    # #Add member to handle Parametric jobs
     self.parametric = {}
     self.script = script
     if not script:
@@ -147,16 +144,21 @@ class Job( API ):
 
     moduleName = moduleName.replace( '.', '' )
     stepNumber = self.stepCount
-    stepDefn = 'ScriptStep%s' % ( stepNumber )
-    step = self.__getScriptStep( stepDefn )
+
+    parsList = [['name', 'string', '', "Name of executable"],
+                ['executable', 'string', '', "Executable Script"],
+                ['arguments', 'string', '', 'Arguments for executable Script'],
+                ['logFile', 'string', '', "Log file name"]
+                ]
+
+    step = getStepDefinition( 'ScriptStep%s' % ( stepNumber ), ['Script'], parametersList = parsList )
     stepName = 'RunScriptStep%s' % ( stepNumber )
     logPrefix = 'Script%s_' % ( stepNumber )
     logName = '%s%s' % ( logPrefix, logName )
     self.addToOutputSandbox.append( logName )
-    self.workflow.addStep( step )
 
-    # Define Step and its variables
-    stepInstance = self.workflow.createStepInstance( stepDefn, stepName )
+    stepInstance = addStepToWorkflow( self.workflow, step, stepName )
+
     stepInstance.setValue( "name", moduleName )
     stepInstance.setValue( "logFile", logName )
     stepInstance.setValue( "executable", executable )
@@ -218,12 +220,12 @@ class Job( API ):
       fileList = ';'.join( resolvedFiles )
       description = 'Input sandbox file list'
       self._addParameter( self.workflow, 'InputSandbox', 'JDL', fileList, description )
-      #self.sandboxFiles=resolvedFiles
+      # self.sandboxFiles=resolvedFiles
     elif type( files ) == type( " " ):
       resolvedFiles = self._resolveInputSandbox( [files] )
       fileList = ';'.join( resolvedFiles )
       description = 'Input sandbox file'
-      #self.sandboxFiles = [files]
+      # self.sandboxFiles = [files]
       self._addParameter( self.workflow, 'InputSandbox', 'JDL', fileList, description )
     else:
       kwargs = {'files':files}
@@ -253,13 +255,13 @@ class Job( API ):
           return self._reportError( 'All files should be LFNs', **kwargs )
       resolvedFiles = self._resolveInputSandbox( files )
       self.parametric['InputSandbox'] = resolvedFiles
-      #self.sandboxFiles=resolvedFiles
+      # self.sandboxFiles=resolvedFiles
     elif type( files ) == type( " " ):
       if not files.lower().count( "lfn:" ):
         return self._reportError( 'All files should be LFNs', **kwargs )
       resolvedFiles = self._resolveInputSandbox( [files] )
       self.parametric['InputSandbox'] = resolvedFiles
-      #self.sandboxFiles = [files]
+      # self.sandboxFiles = [files]
     else:
       return self._reportError( 'Expected file string or list of files for input sandbox contents', **kwargs )
 
@@ -316,7 +318,7 @@ class Job( API ):
       inputDataStr = ';'.join( inputData )
       description = 'List of input data specified by LFNs'
       self._addParameter( self.workflow, 'InputData', 'JDL', inputDataStr, description )
-    elif type( lfns ) == type( ' ' ):  #single LFN
+    elif type( lfns ) == type( ' ' ):  # single LFN
       description = 'Input data specified by LFN'
       self._addParameter( self.workflow, 'InputData', 'JDL', lfns, description )
     else:
@@ -347,7 +349,7 @@ class Job( API ):
         else:
           lfns[i] = 'LFN:' + lfns[i].replace( 'LFN:', '' )
       self.parametric['InputData'] = lfns
-    elif type( lfns ) == type( ' ' ):  #single LFN
+    elif type( lfns ) == type( ' ' ):  # single LFN
       self.parametric['InputData'] = lfns
     else:
       kwargs = {'lfns':lfns}
@@ -355,7 +357,7 @@ class Job( API ):
 
     return S_OK()
 
-  #############################################################################  
+  #############################################################################
   def setGenericParametricInput( self, inputlist ):
     """ Helper function
 
@@ -483,7 +485,7 @@ class Job( API ):
        Choose submission pool on which job is executed e.g. DIRAC, LCG.
        Default in place for users.
     """
-    #should add protection here for list of supported platforms
+    # should add protection here for list of supported platforms
     kwargs = {'backend':backend}
     if not type( backend ) == type( " " ):
       return self._reportError( 'Expected string for platform', **kwargs )
@@ -867,8 +869,8 @@ class Job( API ):
     self.log.info( '--------------------------------------' )
     self.log.info( 'Workflow parameter summary:           ' )
     self.log.info( '--------------------------------------' )
-    #print self.workflow.parameters
-    #print params.getParametersNames()
+    # print self.workflow.parameters
+    # print params.getParametersNames()
     for name, _props in paramsDict.items():
       ptype = paramsDict[name]['type']
       value = paramsDict[name]['value']
@@ -889,7 +891,7 @@ class Job( API ):
     self._addParameter( self.workflow, 'Priority', 'JDL', self.priority, 'User Job Priority' )
     self._addParameter( self.workflow, 'JobGroup', 'JDL', self.group, 'Name of the JobGroup' )
     self._addParameter( self.workflow, 'JobName', 'JDL', self.name, 'Name of Job' )
-    #self._addParameter(self.workflow,'DIRACSetup','JDL',self.setup,'DIRAC Setup')
+    # self._addParameter(self.workflow,'DIRACSetup','JDL',self.setup,'DIRAC Setup')
     self._addParameter( self.workflow, 'SystemConfig', 'JDLReqt', self.systemConfig, 'System configuration for job' )
     self._addParameter( self.workflow, 'Site', 'JDL', self.site, 'Site Requirement' )
     self._addParameter( self.workflow, 'Origin', 'JDL', self.origin, 'Origin of client' )
@@ -897,7 +899,7 @@ class Job( API ):
     self._addParameter( self.workflow, 'StdError', 'JDL', self.stderr, 'Standard error file' )
     self._addParameter( self.workflow, 'InputData', 'JDL', '', 'Default null input data value' )
     self._addParameter( self.workflow, 'LogLevel', 'JDL', self.logLevel, 'Job Logging Level' )
-    #Those 2 below are need for on-site resolution
+    # Those 2 below are need for on-site resolution
     self._addParameter( self.workflow, 'ParametricInputData', 'string', '',
                         'Default null parametric input data value' )
     self._addParameter( self.workflow, 'ParametricInputSandbox', 'string', '',
@@ -938,7 +940,7 @@ class Job( API ):
           resolvedIS.append( i )
 
     for name in inputSandbox:
-      if re.search( '\*', name ): #escape the star character...
+      if re.search( '\*', name ):  # escape the star character...
         cmd = 'ls -d ' + name
         output = shellCall( 10, cmd )
         if not output['OK']:
@@ -950,10 +952,10 @@ class Job( API ):
               self.log.verbose( 'Found file ' + check + ' appending to Input Sandbox' )
               resolvedIS.append( check )
             if os.path.isdir( check ):
-              if re.search( '/$', check ): #users can specify e.g. /my/dir/lib/
+              if re.search( '/$', check ):  # users can specify e.g. /my/dir/lib/
                 check = check[:-1]
               tarname = os.path.basename( check )
-              directory = os.path.dirname( check ) #if just the directory this is null
+              directory = os.path.dirname( check )  # if just the directory this is null
               if directory:
                 cmd = 'tar cfz ' + tarname + '.tar.gz ' + ' -C ' + directory + ' ' + tarname
               else:
@@ -967,10 +969,10 @@ class Job( API ):
 
       if os.path.isdir( name ):
         self.log.verbose( 'Found specified directory ' + name + ', appending ' + name + '.tar.gz to Input Sandbox' )
-        if re.search( '/$', name ): #users can specify e.g. /my/dir/lib/
+        if re.search( '/$', name ):  # users can specify e.g. /my/dir/lib/
           name = name[:-1]
         tarname = os.path.basename( name )
-        directory = os.path.dirname( name ) #if just the directory this is null
+        directory = os.path.dirname( name )  # if just the directory this is null
         if directory:
           cmd = 'tar cfz ' + tarname + '.tar.gz ' + ' -C ' + directory + ' ' + tarname
         else:
@@ -985,42 +987,21 @@ class Job( API ):
     return resolvedIS
 
   #############################################################################
-  @classmethod
-  def __getScriptStep( self, name = 'Script' ):
-    """Internal function. This method controls the definition for a script module.
-    """
-    # Create the script module first
-    moduleName = 'Script'
-    module = ModuleDefinition( moduleName )
-    module.setDescription( 'A  script module that can execute any provided script.' )
-    body = 'from DIRAC.Workflow.Modules.Script import Script\n'
-    module.setBody( body )
-    # Create Step definition
-    step = StepDefinition( name )
-    step.addModule( module )
-    moduleInstance = step.createModuleInstance( 'Script', name )
-    # Define step parameters
-    step.addParameter( Parameter( "name", "", "string", "", "", False, False, 'Name of executable' ) )
-    step.addParameter( Parameter( "executable", "", "string", "", "", False, False, 'Executable Script' ) )
-    step.addParameter( Parameter( "arguments", "", "string", "", "", False, False, 'Arguments for executable Script' ) )
-    step.addParameter( Parameter( "logFile", "", "string", "", "", False, False, 'Log file name' ) )
-    return step
 
-  #############################################################################
   def _toXML( self ):
     """Creates an XML representation of itself as a Job.
     """
     return self.workflow.toXML()
 
   #############################################################################
-  def _toJDL( self, xmlFile = '' ): #messy but need to account for xml file being in /tmp/guid dir
+  def _toJDL( self, xmlFile = '' ):  # messy but need to account for xml file being in /tmp/guid dir
     """Creates a JDL representation of itself as a Job.
     """
-    #Check if we have to do old bootstrap...
+    # Check if we have to do old bootstrap...
     classadJob = ClassAd( '[]' )
 
     paramsDict = {}
-    params = self.workflow.parameters # ParameterCollection object
+    params = self.workflow.parameters  # ParameterCollection object
 
     paramList = params
     for param in paramList:
@@ -1064,10 +1045,10 @@ class Job( API ):
     self.addToOutputSandbox.append( self.stderr )
     self.addToOutputSandbox.append( self.stdout )
 
-    #Extract i/o sandbox parameters from steps and any input data parameters
-    #to do when introducing step-level api...
+    # Extract i/o sandbox parameters from steps and any input data parameters
+    # to do when introducing step-level api...
 
-    #To add any additional files to input and output sandboxes
+    # To add any additional files to input and output sandboxes
     if self.addToInputSandbox:
       extraFiles = ';'.join( self.addToInputSandbox )
       if paramsDict.has_key( 'InputSandbox' ):
@@ -1142,10 +1123,10 @@ class Job( API ):
         paramsDict['Parameters']['value'] = self.parametric['GenericParameters']
         paramsDict['Parameters']['type'] = 'JDL'
         arguments.append( ' -p ParametricParameters=%s' )
-    ##This needs to be put here so that the InputData and/or InputSandbox parameters for parametric jobs are processed
+    # #This needs to be put here so that the InputData and/or InputSandbox parameters for parametric jobs are processed
     classadJob.insertAttributeString( 'Arguments', ' '.join( arguments ) )
 
-    #Add any JDL parameters to classad obeying lists with ';' rule
+    # Add any JDL parameters to classad obeying lists with ';' rule
     requirements = False
     for name, props in paramsDict.items():
       ptype = props['type']
@@ -1162,7 +1143,7 @@ class Job( API ):
             classadJob.insertAttributeVectorString( name, value )
         elif value == "%s":
           classadJob.insertAttributeInt( name, value )
-        elif not re.search( ';', value ) or name == 'GridRequirements': #not a nice fix...
+        elif not re.search( ';', value ) or name == 'GridRequirements':  # not a nice fix...
           classadJob.insertAttributeString( name, value )
         else:
           classadJob.insertAttributeVectorString( name, value.split( ';' ) )
@@ -1189,7 +1170,7 @@ class Job( API ):
       if not exprn:
         exprn = 'true'
       self.log.verbose( 'Requirements: %s' % ( exprn ) )
-      #classadJob.set_expression('Requirements', exprn)
+      # classadJob.set_expression('Requirements', exprn)
 
     self.addToInputSandbox.remove( scriptname )
     self.addToOutputSandbox.remove( self.stdout )
@@ -1212,4 +1193,4 @@ class Job( API ):
     self._addParameter( self.workflow, name, 'JDL', value, 'Optional JDL parameter added' )
     return self.workflow.setValue( name, value )
 
-#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#
+# EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#
