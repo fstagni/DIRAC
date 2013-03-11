@@ -101,7 +101,7 @@ class ModuleBase( object ):
     '''
 
     self.log.flushAllMessages( 0 )
-    self.log.info( '===== Terminating ' + self.__class__ + ' ===== ' )
+    self.log.info( '===== Terminating ' + str( self.__class__ ) + ' ===== ' )
 
   #############################################################################
 
