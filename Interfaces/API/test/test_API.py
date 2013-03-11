@@ -49,7 +49,7 @@ class APISuccess( APITestCase ):
 <Parameter name="Owner" type="JDL" linked_module="" linked_parameter="" in="True" out="False" description="User specified ID"><value><![CDATA[ownerName]]></value></Parameter>
 <Parameter name="OwnerGroup" type="JDL" linked_module="" linked_parameter="" in="True" out="False" description="User specified owner group."><value><![CDATA[ownerGroup]]></value></Parameter>
 <ModuleDefinition>
-<body><![CDATA[from DIRAC.Core.Workflow.Modules.Script import Script
+<body><![CDATA[from DIRAC.Workflow.Modules.Script import Script
 ]]></body>
 <origin></origin>
 <description><![CDATA[A  script module that can execute any provided script.]]></description>

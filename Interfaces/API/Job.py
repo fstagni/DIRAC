@@ -993,7 +993,7 @@ class Job( API ):
     moduleName = 'Script'
     module = ModuleDefinition( moduleName )
     module.setDescription( 'A  script module that can execute any provided script.' )
-    body = 'from DIRAC.Core.Workflow.Modules.Script import Script\n'
+    body = 'from DIRAC.Workflow.Modules.Script import Script\n'
     module.setBody( body )
     # Create Step definition
     step = StepDefinition( name )
