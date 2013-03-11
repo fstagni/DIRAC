@@ -1,10 +1,5 @@
-# $Id$
+""" Module
 """
-    This is a comment
-"""
-__RCSID__ = "$Revision: 1.19 $"
-
-# $Source: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Core/Workflow/Module.py,v $
 
 import copy
 import os
@@ -12,11 +7,6 @@ import os
 #try: # this part to import as part of the DIRAC framework
 from DIRAC.Core.Workflow.Parameter import AttributeCollection, ParameterCollection, indent
 from DIRAC.Core.Workflow.Step import StepDefinition, StepInstance
-
-#RICARDO PLEASE DO NOT CHANGE THIS BACK. IT BREAKS THE EXECUTION OF WORKFLOWS!
-#from DIRAC.Core.Workflow.Step import *
-#except: # this part is to import code without DIRAC
-#  from Parameter import *
 
 class ModuleDefinition( AttributeCollection ):
 

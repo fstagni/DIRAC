@@ -1,15 +1,12 @@
-# $Id$
-"""
-    This is a comment
-"""
-__RCSID__ = "$Revision: 1.30 $"
+''' Step Definition module
+'''
 
 import os
 import time
 import types
 import traceback
 import sys
-#try: # this part to inport as part of the DIRAC framework
+# try: # this part to import as part of the DIRAC framework
 from DIRAC.Core.Workflow.Parameter import Parameter, AttributeCollection, ParameterCollection, indent
 from DIRAC.Core.Workflow.Module import InstancesPool, DefinitionsPool, ModuleInstance
 from DIRAC import S_OK, S_ERROR
