@@ -4,8 +4,8 @@
 import copy
 import os
 
+import DIRAC.Core.Workflow.Step
 from DIRAC.Core.Workflow.Parameter import AttributeCollection, ParameterCollection, indent
-from DIRAC.Core.Workflow.Step import StepDefinition, StepInstance
 
 class ModuleDefinition( AttributeCollection ):
 
@@ -157,8 +157,8 @@ class DefinitionsPool( dict ):
         v = pool[k]
         if isinstance( v, ModuleDefinition ):
           obj = ModuleDefinition( None, v, self.parent )
-        elif  isinstance( v, StepDefinition ):
-          obj = StepDefinition( None, v, self.parent )
+        elif  isinstance( v, DIRAC.Core.Workflow.Step.StepDefinition ):
+          obj = DIRAC.Core.Workflow.Step.StepDefinition( None, v, self.parent )
         else:
           raise TypeError( 'Error: __init__ Wrong type of object stored in the DefinitionPool ' + str( type( pool[v] ) ) )
         self.append( obj )
@@ -250,8 +250,8 @@ class InstancesPool( list ):
         self.append( copy.deepcopy( v ) )
         if isinstance( v, ModuleInstance ):
           obj = ModuleInstance( None, v, self.parent )
-        elif  isinstance( v, StepInstance ):
-          obj = StepInstance( None, v, self.parent )
+        elif  isinstance( v, DIRAC.Core.Workflow.Step.StepInstance ):
+          obj = DIRAC.Core.Workflow.Step.StepInstance( None, v, self.parent )
         else:
           raise TypeError( 'Error: __init__ Wrong type of object stored in the DefinitionPool ' + str( type( pool[v] ) ) )
         self.append( obj )
