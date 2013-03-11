@@ -1,10 +1,9 @@
-""" Module
-"""
+''' Module - modules are included in the steps. Modules can have parameters.
+'''
 
 import copy
 import os
 
-#try: # this part to import as part of the DIRAC framework
 from DIRAC.Core.Workflow.Parameter import AttributeCollection, ParameterCollection, indent
 from DIRAC.Core.Workflow.Step import StepDefinition, StepInstance
 
@@ -14,8 +13,8 @@ class ModuleDefinition( AttributeCollection ):
     # we can create an object from another module
     # or from the ParameterCollection
     AttributeCollection.__init__( self )
-    self.main_class_obj = None # used for the interpretation only
-    #self.module_obj = None     # used for the interpretation only
+    self.main_class_obj = None  # used for the interpretation only
+    # self.module_obj = None     # used for the interpretation only
     self.parent = parent
 
     if ( obj == None ) or isinstance( obj, ParameterCollection ):
@@ -26,7 +25,7 @@ class ModuleDefinition( AttributeCollection ):
       self.setBody( '' )
       self.setOrigin( '' )
       self.setVersion( 0.0 )
-      self.parameters = ParameterCollection( obj ) # creating copy
+      self.parameters = ParameterCollection( obj )  # creating copy
 
     elif isinstance( obj, ModuleDefinition ):
       self.setType( obj.getType() )
@@ -66,19 +65,19 @@ class ModuleDefinition( AttributeCollection ):
     xmlfile.close()
 
   def loadCode( self ):
-    #print 'Loading code of the Module =', self.getType()
+    # print 'Loading code of the Module =', self.getType()
     # version 1 - OLD sample
-    #ret = compile(self.getBody(),'<string>','exec')
-    #eval(ret)
-    #return ret #returning ref just in case we might need it
+    # ret = compile(self.getBody(),'<string>','exec')
+    # eval(ret)
+    # return ret #returning ref just in case we might need it
     #
-    if len( self.getBody() ): # checking the size of the string
+    if len( self.getBody() ):  # checking the size of the string
       # version 2 - we assume that each self.body is a module oblect
-      #module = new.module(self.getType())    # create empty module object
-      #sys.modules[self.getType()] = module   # add reference for the import operator
-      #exec self.getBody() in module.__dict__ # execute code itself
-      #self.module_obj = module               # save pointer to this module
-      #if module.__dict__.has_key(self.getType()):
+      # module = new.module(self.getType())    # create empty module object
+      # sys.modules[self.getType()] = module   # add reference for the import operator
+      # exec self.getBody() in module.__dict__ # execute code itself
+      # self.module_obj = module               # save pointer to this module
+      # if module.__dict__.has_key(self.getType()):
       #    self.main_class_obj = module.__dict__[self.getType()] # save class object
 
       # version 3
@@ -87,7 +86,7 @@ class ModuleDefinition( AttributeCollection ):
       #       a class with name "self.getType()" defined in the local scope.
       exec self.getBody()
       if vars().has_key( self.getType() ):
-        self.main_class_obj = vars()[self.getType()] # save class object
+        self.main_class_obj = vars()[self.getType()]  # save class object
       else:
         # it is possible to have this class in another module, we have to check for this
         # but it is advisible to use 'from module import class' operator
@@ -103,7 +102,7 @@ class ModuleInstance( AttributeCollection ):
 
   def __init__( self, name, obj = None, parent = None ):
     AttributeCollection.__init__( self )
-    self.instance_obj = None # used for the interpretation only
+    self.instance_obj = None  # used for the interpretation only
     self.parent = parent
 
     if obj == None:
@@ -143,8 +142,8 @@ class ModuleInstance( AttributeCollection ):
     return ret
 
   def execute( self, step_parameters, definitions ):
-    #print 'Executing ModuleInstance ',self.getName(),'of type',self.getType()
-    self.instance_obj = definitions[self.getType()].main_class_obj() # creating instance
+    # print 'Executing ModuleInstance ',self.getName(),'of type',self.getType()
+    self.instance_obj = definitions[self.getType()].main_class_obj()  # creating instance
     self.parameters.execute( self.getName() )
     self.instance_obj.execute2()
 
@@ -152,7 +151,7 @@ class DefinitionsPool( dict ):
 
   def __init__( self, parent, pool = None ):
     dict.__init__( self )
-    self.parent = parent # this is a cache value, we propagate it into next level
+    self.parent = parent  # this is a cache value, we propagate it into next level
     if isinstance( pool, DefinitionsPool ):
       for k in pool.keys():
         v = pool[k]
@@ -174,8 +173,8 @@ class DefinitionsPool( dict ):
 #       print 'For now we ignore it for the', obj.getType()
 
   def append( self, obj ):
-    """ We add new Definition (Module, Step)
-    """
+    ''' We add new Definition (Module, Step)
+    '''
     self[obj.getType()] = obj
     obj.setParent( self.parent )
     return obj
@@ -186,9 +185,9 @@ class DefinitionsPool( dict ):
 
   def compare( self, s ):
     if not isinstance( s, DefinitionsPool ):
-      return False # chacking types of objects
+      return False  # chacking types of objects
     if len( s ) != len( self ):
-      return False # checkin size
+      return False  # checkin size
     # we need to compare the keys of dictionaries
     if self.keys() != s.keys():
       return False
@@ -230,7 +229,7 @@ class DefinitionsPool( dict ):
   def createCode( self ):
     str_ = ''
     for k in self.keys():
-      #str=str+indent(2)+'# flush code for instance\n'
+      # str=str+indent(2)+'# flush code for instance\n'
       str_ = str_ + self[k].createCode()
     return str_
 
@@ -243,7 +242,7 @@ class InstancesPool( list ):
 
   def __init__( self, parent, pool = None ):
     list.__init__( self )
-    self.parent = None # this is a cache value, we propagate it into next level
+    self.parent = None  # this is a cache value, we propagate it into next level
     if isinstance( pool, InstancesPool ):
       for v in pool:
         # I need to check this fubction
@@ -297,7 +296,7 @@ class InstancesPool( list ):
       if v.getName() == name:
         return i
       i = i + 1
-    return - 1
+    return -1
 
   def find( self, name ):
     for v in self:
@@ -322,7 +321,7 @@ class InstancesPool( list ):
           else:
             break
       else:
-        #if we reached this place naturally we can not find matching name
+        # if we reached this place naturally we can not find matching name
         return False
     return True
 
