@@ -178,6 +178,24 @@ class ModulesTestCase( unittest.TestCase ):
     from DIRAC.Workflow.Modules.ModuleBase import ModuleBase
     self.mb = ModuleBase( rm = self.rm_mock )
 
+  def tearDown( self ):
+    for fileProd in ['appLog', 'foo.txt', 'aaa.Bhadron.dst', 'bbb.Calibration.dst',
+                     'ccc.charm.mdst', 'prova.txt', 'foo.txt', 'BAR.txt', 'FooBAR.ext.txt',
+                     'ErrorLogging_Step1_coredump.log', '123_00000456_request.xml', 'lfn1', 'lfn2',
+                     'aaa.bhadron.dst', 'bbb.calibration.dst', 'ProductionOutputData', 'data.py',
+                     '00000123_00000456.tar', 'someOtherDir', 'DISABLE_WATCHDOG_CPU_WALLCLOCK_CHECK',
+                     ]:
+      try:
+        os.remove( fileProd )
+      except OSError:
+        continue
+
+    for directory in ['./job', 'job']:
+      try:
+        shutil.rmtree( directory )
+      except:
+        continue
+
 #############################################################################
 # ModuleBase.py
 #############################################################################
