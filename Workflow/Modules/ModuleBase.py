@@ -221,6 +221,28 @@ class ModuleBase( object ):
 
   #############################################################################
 
+  def _determineStepInputData( self, inputData ):
+    ''' determine the input data for the step
+    '''
+    if inputData == 'previousStep':
+      stepIndex = self.gaudiSteps.index( self.stepName )
+      previousStep = self.gaudiSteps[stepIndex - 1]
+
+      stepInputData = []
+      for outputF in self.workflow_commons['outputList']:
+        try:
+          if outputF['stepName'] == previousStep and outputF['outputDataType'].lower() == self.inputDataType.lower():
+            stepInputData.append( outputF['outputDataName'] )
+        except KeyError:
+          return S_ERROR( 'Can\'t find output of step %s' % previousStep )
+
+      return stepInputData
+
+    else:
+      return [x.strip( 'LFN:' ) for x in inputData.split( ';' )]
+
+  #############################################################################
+
   def setApplicationStatus( self, status, sendFlag = True, jr = None ):
     '''Wraps around setJobApplicationStatus of state update client
     '''

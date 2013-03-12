@@ -178,6 +178,10 @@ class ModulesTestCase( unittest.TestCase ):
     from DIRAC.Workflow.Modules.ModuleBase import ModuleBase
     self.mb = ModuleBase( rm = self.rm_mock )
 
+    from DIRAC.Workflow.Modules.FailoverRequest import FailoverRequest
+    self.fr = FailoverRequest( rm = self.rm_mock )
+
+
   def tearDown( self ):
     for fileProd in ['appLog', 'foo.txt', 'aaa.Bhadron.dst', 'bbb.Calibration.dst',
                      'ccc.charm.mdst', 'prova.txt', 'foo.txt', 'BAR.txt', 'FooBAR.ext.txt',
@@ -291,7 +295,9 @@ class ModuleBaseSuccess( ModulesTestCase ):
     outputLFNs = ['/lhcb/MC/2010/DST/00012345/0001/foo.txt']
     fileMask = 'txt'
     stepMask = ''
-    result = {'foo.txt': {'lfn': '/lhcb/MC/2010/DST/00012345/0001/foo.txt', 'type': outputList[0]['outputDataType'], 'workflowSE': outputList[0]['outputDataSE']}}
+    result = {'foo.txt': {'lfn': '/lhcb/MC/2010/DST/00012345/0001/foo.txt',
+                          'type': outputList[0]['outputDataType'],
+                          'workflowSE': outputList[0]['outputDataSE']}}
 
     res = self.mb.getCandidateFiles( outputList, outputLFNs, fileMask, stepMask )
 
@@ -306,3 +312,32 @@ class ModuleBaseSuccess( ModulesTestCase ):
                      self.step_number, self.step_id )
     self.assertTrue( self.mb._enableModule() )
 
+
+#############################################################################
+# FailoverRequest.py
+#############################################################################
+
+class FailoverRequestSuccess( ModulesTestCase ):
+
+  #################################################
+
+  def test_execute( self ):
+
+    self.fr.jobType = 'merge'
+    self.fr.stepInputData = ['foo', 'bar']
+
+    # no errors, no input data
+    for wf_commons in copy.deepcopy( self.wf_commons ):
+      for step_commons in self.step_commons:
+        self.assertTrue( self.fr.execute( self.prod_id, self.prod_job_id, self.wms_job_id,
+                                          self.workflowStatus, self.stepStatus,
+                                          wf_commons, step_commons,
+                                          self.step_number, self.step_id )['OK'] )
+
+if __name__ == '__main__':
+  suite = unittest.defaultTestLoader.loadTestsFromTestCase( ModulesTestCase )
+  suite.addTest( unittest.defaultTestLoader.loadTestsFromTestCase( ModuleBaseSuccess ) )
+  suite.addTest( unittest.defaultTestLoader.loadTestsFromTestCase( FailoverRequestSuccess ) )
+  testResult = unittest.TextTestRunner( verbosity = 2 ).run( suite )
+
+# EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#
