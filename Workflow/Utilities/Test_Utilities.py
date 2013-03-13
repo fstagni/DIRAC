@@ -1,10 +1,8 @@
 import unittest
 
-from DIRAC.Core.Workflow.Parameter import Parameter
-from mock import Mock
 from DIRAC.Core.Workflow.Module import ModuleDefinition
 from DIRAC.Core.Workflow.Step import StepDefinition
-# from DIRAC.Interfaces.API.Job import Job
+from DIRAC.Interfaces.API.Job import Job
 from DIRAC.Workflow.Utilities.Utils import getStepDefinition, getStepCPUTimes
 
 #############################################################################
@@ -14,48 +12,54 @@ class UtilitiesTestCase( unittest.TestCase ):
   """
   def setUp( self ):
 
-#    self.job = Job()
+    self.job = Job()
     pass
 
 class UtilsSuccess( UtilitiesTestCase ):
 
   def test__getStepDefinition( self ):
     importLine = """
- from DIRAC.Workflow.Modules.<MODULE> import <MODULE>
- """
+from DIRAC.Workflow.Modules.<MODULE> import <MODULE>
+"""
     # modules
     gaudiApp = ModuleDefinition( 'Script' )
-    gaudiApp.setDescription( 'Script class' )
     body = importLine.replace( '<MODULE>', 'Script' )
+    gaudiApp.setDescription( getattr( __import__( "%s.%s" % ( 'DIRAC.Workflow.Modules', 'Script' ),
+                                                     globals(), locals(), ['__doc__'] ),
+                                        "__doc__" ) )
     gaudiApp.setBody( body )
 
-    genBKReport = ModuleDefinition( 'BookkeepingReport' )
-    genBKReport.setDescription( 'Bookkeeping Report class' )
-    body = importLine.replace( '<MODULE>', 'BookkeepingReport' )
+    genBKReport = ModuleDefinition( 'FailoverRequest' )
+    body = importLine.replace( '<MODULE>', 'FailoverRequest' )
+    genBKReport.setDescription( getattr( __import__( "%s.%s" % ( 'DIRAC.Workflow.Modules', 'FailoverRequest' ),
+                                                     globals(), locals(), ['__doc__'] ),
+                                        "__doc__" ) )
     genBKReport.setBody( body )
 
     # step
-    gaudiAppDefn = StepDefinition( 'Gaudi_App_Step' )
-    gaudiAppDefn.addModule( gaudiApp )
-    gaudiAppDefn.createModuleInstance( 'Script', 'Script' )
-    gaudiAppDefn.addModule( genBKReport )
-    gaudiAppDefn.createModuleInstance( 'BookkeepingReport', 'BookkeepingReport' )
+    appDefn = StepDefinition( 'App_Step' )
+    appDefn.addModule( gaudiApp )
+    appDefn.createModuleInstance( 'Script', 'Script' )
+    appDefn.addModule( genBKReport )
+    appDefn.createModuleInstance( 'FailoverRequest', 'FailoverRequest' )
 
-    gaudiAppDefn.addParameterLinked( gaudiApp.parameters )
+    appDefn.addParameterLinked( gaudiApp.parameters )
 
-    stepDef = getStepDefinition( 'Gaudi_App_Step', ['GaudiApplication', 'BookkeepingReport'] )
-    self.assert_( str( gaudiAppDefn ) == str( stepDef ) )
+    stepDef = getStepDefinition( 'App_Step', ['Script', 'FailoverRequest'] )
 
-    self.job._addParameter( gaudiAppDefn, 'name', 'type', 'value', 'desc' )
-    self.job._addParameter( gaudiAppDefn, 'name1', 'type1', 'value1', 'desc1' )
+    self.assert_( str( appDefn ) == str( stepDef ) )
 
 
-    stepDef = getStepDefinition( 'Gaudi_App_Step', ['GaudiApplication', 'BookkeepingReport'],
+
+    self.job._addParameter( appDefn, 'name', 'type', 'value', 'desc' )
+    self.job._addParameter( appDefn, 'name1', 'type1', 'value1', 'desc1' )
+
+
+    stepDef = getStepDefinition( 'App_Step', ['Script', 'FailoverRequest'],
                                  parametersList = [[ 'name', 'type', 'value', 'desc' ],
                                                    [ 'name1', 'type1', 'value1', 'desc1' ]] )
 
-
-    self.assert_( str( gaudiAppDefn ) == str( stepDef ) )
+    self.assert_( str( appDefn ) == str( stepDef ) )
 
   def test_getStepCPUTimes( self ):
     execT, cpuT = getStepCPUTimes( {} )
