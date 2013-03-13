@@ -67,10 +67,9 @@ from DIRAC.Workflow.Modules.Script import Script
 <type>ScriptStep1</type>
 <description><![CDATA[]]></description>
 <descr_short></descr_short>
-<Parameter name="name" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Name of executable"><value><![CDATA[]]></value></Parameter>
 <Parameter name="executable" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Executable Script"><value><![CDATA[]]></value></Parameter>
 <Parameter name="arguments" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Arguments for executable Script"><value><![CDATA[]]></value></Parameter>
-<Parameter name="logFile" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Log file name"><value><![CDATA[]]></value></Parameter>
+<Parameter name="applicationLog" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Log file name"><value><![CDATA[]]></value></Parameter>
 <ModuleInstance>
 <type>Script</type>
 <name>Script</name>
@@ -81,10 +80,9 @@ from DIRAC.Workflow.Modules.Script import Script
 <type>ScriptStep1</type>
 <name>RunScriptStep1</name>
 <descr_short></descr_short>
-<Parameter name="name" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Name of executable"><value><![CDATA[CodeSegment]]></value></Parameter>
 <Parameter name="executable" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Executable Script"><value><![CDATA[someExe]]></value></Parameter>
 <Parameter name="arguments" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Arguments for executable Script"><value><![CDATA[]]></value></Parameter>
-<Parameter name="logFile" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Log file name"><value><![CDATA[Script1_CodeOutput.log]]></value></Parameter>
+<Parameter name="applicationLog" type="string" linked_module="" linked_parameter="" in="True" out="False" description="Log file name"><value><![CDATA[Script1_CodeOutput.log]]></value></Parameter>
 </StepInstance>
 </Workflow>
 '''

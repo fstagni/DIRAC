@@ -97,7 +97,13 @@ class Job( API ):
       self.workflow = Workflow( script )
 
   #############################################################################
-  def setExecutable( self, executable, arguments = '', logFile = '' ):
+
+  def setExecutable( self, executable, arguments = '', logFile = '',
+                     modulesList = ['Script'],
+                     parameters = [( 'executable', 'string', '', "Executable Script" ),
+                                   ( 'arguments', 'string', '', 'Arguments for executable Script' ),
+                                   ( 'applicationLog', 'string', '', "Log file name" )]
+                    ):
     """Helper function.
 
        Specify executable script to run with optional arguments and log file
@@ -120,6 +126,10 @@ class Job( API ):
        :type arguments: string
        :param logFile: Optional log file name
        :type logFile: string
+       :param modulesList: Optional list of modules (to be used mostly when extending this method
+       :type modulesList: list
+       :param parameters: Optional list of parameters (to be used mostly when extending this method
+       :type parameters: list
     """
     kwargs = {'executable':executable, 'arguments':arguments, 'logFile':logFile}
     if not type( executable ) == type( ' ' ) or not type( arguments ) == type( ' ' ) or \
@@ -130,11 +140,9 @@ class Job( API ):
       self.log.verbose( 'Found script executable file %s' % ( executable ) )
       self.addToInputSandbox.append( executable )
       logName = '%s.log' % ( os.path.basename( executable ) )
-      moduleName = os.path.basename( executable )
     else:
-      self.log.verbose( 'Found executable code' )
+      self.log.warn( 'The executable code could not be found locally' )
       logName = 'CodeOutput.log'
-      moduleName = 'CodeSegment'
 
     if logFile:
       if type( logFile ) == type( ' ' ):
@@ -142,30 +150,19 @@ class Job( API ):
 
     self.stepCount += 1
 
-    moduleName = moduleName.replace( '.', '' )
-    stepNumber = self.stepCount
-
-    parsList = [['name', 'string', '', "Name of executable"],
-                ['executable', 'string', '', "Executable Script"],
-                ['arguments', 'string', '', 'Arguments for executable Script'],
-                ['logFile', 'string', '', "Log file name"]
-                ]
-
-    step = getStepDefinition( 'ScriptStep%s' % ( stepNumber ), ['Script'], parametersList = parsList )
-    stepName = 'RunScriptStep%s' % ( stepNumber )
-    logPrefix = 'Script%s_' % ( stepNumber )
-    logName = '%s%s' % ( logPrefix, logName )
+    step = getStepDefinition( 'ScriptStep%s' % ( self.stepCount ), modulesList, parametersList = parameters )
+    stepName = 'RunScriptStep%s' % ( self.stepCount )
+    logName = '%s%s' % ( 'Script%s_' % ( self.stepCount ), logName )
     self.addToOutputSandbox.append( logName )
 
     stepInstance = addStepToWorkflow( self.workflow, step, stepName )
 
-    stepInstance.setValue( "name", moduleName )
-    stepInstance.setValue( "logFile", logName )
-    stepInstance.setValue( "executable", executable )
+    stepInstance.setValue( 'applicationLog', logName )
+    stepInstance.setValue( 'executable', executable )
     if arguments:
-      stepInstance.setValue( "arguments", arguments )
+      stepInstance.setValue( 'arguments', arguments )
 
-    return S_OK()
+    return S_OK( stepInstance )
 
   #############################################################################
   def setName( self, jobName ):

@@ -196,6 +196,11 @@ class ModuleBase( object ):
 
     self.stepName = self.step_commons['STEP_INSTANCE_NAME']
 
+    if self.step_commons.has_key( 'executable' ) and self.step_commons['executable']:
+      self.executable = self.step_commons['executable']
+    else:
+      self.executable = 'Unknown'
+
     if self.step_commons.has_key( 'applicationName' ) and self.step_commons['applicationName']:
       self.applicationName = self.step_commons['applicationName']
     else:

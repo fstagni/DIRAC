@@ -21,38 +21,25 @@ class Script( ModuleBase ):
     # Set defaults for all workflow parameters here
     self.name = ''
     self.executable = ''
-    self.logFile = ''
+    self.applicationLog = ''
     self.arguments = ''
     self.step_commons = {}
 
   #############################################################################
 
-  def resolveInputVariables( self ):
+  def _resolveInputVariables( self ):
     ''' By convention the workflow parameters are resolved here.
     '''
     super( Script, self )._resolveInputVariables()
     super( Script, self )._resolveInputStep()
 
-    if self.step_commons.has_key( 'name' ):
-      self.name = self.step_commons['name']
-    else:
-      result = S_ERROR( 'No module instance name defined' )
-      self.log.warn( 'No module instance name defined' )
-
-    if self.step_commons.has_key( 'executable' ):
-      self.executable = self.step_commons['executable']
-    else:
-      result = S_ERROR( 'No executable defined' )
-      self.log.warn( 'No executable defined' )
-
-    if self.step_commons.has_key( 'logFile' ):
-      self.logFile = self.step_commons['logFile']
-    else:
-      result = S_ERROR( 'No logFile defined' )
-      self.log.warn( 'No logFile defined' )
+    if not self.executable:
+      return S_ERROR( 'No executable defined' )
 
     if self.step_commons.has_key( 'arguments' ):
       self.arguments = self.step_commons['arguments']
+
+    return S_OK()
 
   #############################################################################
 
@@ -69,7 +56,9 @@ class Script( ModuleBase ):
                                      wf_commons, step_commons,
                                      step_number, step_id )
 
-      self._resolveInputVariables()
+      res = self._resolveInputVariables()
+      if not res['OK']:
+        return res
 
       self.log.info( 'Script Module Instance Name: %s' % ( self.name ) )
       cmd = self.executable
@@ -101,15 +90,15 @@ class Script( ModuleBase ):
 
       self.log.verbose( stdout )
       self.log.verbose( stderr )
-      if os.path.exists( self.logFile ):
-        self.log.verbose( 'Removing existing %s' % self.logFile )
-        os.remove( self.logFile )
-      fopen = open( '%s/%s' % ( os.getcwd(), self.logFile ), 'w' )
+      if os.path.exists( self.applicationLog ):
+        self.log.verbose( 'Removing existing %s' % self.applicationLog )
+        os.remove( self.applicationLog )
+      fopen = open( '%s/%s' % ( os.getcwd(), self.applicationLog ), 'w' )
       fopen.write( '<<<<<<<<<< %s Standard Output >>>>>>>>>>\n\n%s ' % ( self.executable, stdout ) )
       if stderr:
         fopen.write( '<<<<<<<<<< %s Standard Error >>>>>>>>>>\n\n%s ' % ( self.executable, stderr ) )
       fopen.close()
-      self.log.info( 'Output written to %s, execution complete.' % ( self.logFile ) )
+      self.log.info( 'Output written to %s, execution complete.' % ( self.applicationLog ) )
 
       if failed:
         return S_ERROR( 'Exit Status %s' % ( status ) )
