@@ -94,10 +94,50 @@ class ModuleBase( object ):
     else:
       self.step_id = '%s_%s_%s' % ( self.production_id, self.prod_job_id, self.step_number )
 
+    try:
+      # This is what has to be extended in the modules
+      self._resolveInputVariables()
+      self._initialize()
+      self._setCommand()
+      self._executeCommand()
+      self._execute()
+      return self._finalize()
+
+    except GracefulTermination, e:
+      self.log.info( e )
+      return S_OK( e )
+
+    except Exception, e:
+      self.log.error( e )
+      return S_ERROR( e )
+
+    finally:
+      self.finalize()
+
+  def _initialize( self ):
+    ''' TBE '''
+    pass
+
+  def _setCommand( self ):
+    ''' TBE '''
+    self.command = None
+
+  def _executeCommand( self ):
+    ''' TBE '''
+    pass
+
+  def _execute( self ):
+    ''' TBE '''
+    return S_OK()
+
+  def _finalize( self ):
+    ''' TBE '''
+    raise GracefulTermination, 'Correctly finalized'
+
   #############################################################################
 
   def finalize( self ):
-    ''' Just finalizing
+    ''' Just finalizing the module execution
     '''
 
     self.log.flushAllMessages( 0 )
@@ -449,3 +489,9 @@ class ModuleBase( object ):
 
   #############################################################################
 
+#############################################################################
+
+class GracefulTermination(Exception):
+  pass
+
+#############################################################################

@@ -5,9 +5,9 @@
 import os, sys, re
 
 from DIRAC.Core.Utilities.Subprocess    import shellCall
-from DIRAC                              import gLogger, S_OK, S_ERROR
+from DIRAC                              import gLogger
 
-from DIRAC.Workflow.Modules.ModuleBase  import ModuleBase
+from DIRAC.Workflow.Modules.ModuleBase  import ModuleBase, GracefulTermination
 
 class Script( ModuleBase ):
 
@@ -19,8 +19,9 @@ class Script( ModuleBase ):
     super( Script, self ).__init__( self.log, rm = rm )
 
     # Set defaults for all workflow parameters here
-    self.name = ''
     self.executable = ''
+    self.applicationName = ''
+    self.applicationVersion = ''
     self.applicationLog = ''
     self.arguments = ''
     self.step_commons = {}
@@ -33,84 +34,78 @@ class Script( ModuleBase ):
     super( Script, self )._resolveInputVariables()
     super( Script, self )._resolveInputStep()
 
-    if not self.executable:
-      return S_ERROR( 'No executable defined' )
-
     if self.step_commons.has_key( 'arguments' ):
       self.arguments = self.step_commons['arguments']
 
-    return S_OK()
-
   #############################################################################
 
-  def execute( self, production_id = None, prod_job_id = None, wms_job_id = None,
-               workflowStatus = None, stepStatus = None,
-               wf_commons = None, step_commons = None,
-               step_number = None, step_id = None ):
-    ''' Main execution method.
+  def _initialize( self ):
+    ''' simple checks
     '''
+    if not self.executable:
+      raise AttributeError, 'No executable defined'
 
-    try:
-      super( Script, self ).execute( production_id, prod_job_id, wms_job_id,
-                                     workflowStatus, stepStatus,
-                                     wf_commons, step_commons,
-                                     step_number, step_id )
+  def _setCommand( self ):
+    ''' set the command that will be executed
+    '''
+    self.command = self.executable
+    if os.path.exists( os.path.basename( self.executable ) ):
+      self.executable = os.path.basename( self.executable )
+      if not os.access( '%s/%s' % ( os.getcwd(), self.executable ), 5 ):
+        os.chmod( '%s/%s' % ( os.getcwd(), self.executable ), 0755 )
+      self.command = '%s/%s' % ( os.getcwd(), self.executable )
+    if re.search( '.py$', self.executable ):
+      self.command = '%s %s' % ( sys.executable, self.executable )
+    if self.arguments:
+      self.command = '%s %s' % ( self.command, self.arguments )
 
-      res = self._resolveInputVariables()
-      if not res['OK']:
-        return res
+    self.log.info( 'Command is: %s' % self.command )
 
-      self.log.info( 'Script Module Instance Name: %s' % ( self.name ) )
-      cmd = self.executable
-      if os.path.exists( os.path.basename( self.executable ) ):
-        self.executable = os.path.basename( self.executable )
-        if not os.access( '%s/%s' % ( os.getcwd(), self.executable ), 5 ):
-          os.chmod( '%s/%s' % ( os.getcwd(), self.executable ), 0755 )
-        cmd = '%s/%s' % ( os.getcwd(), self.executable )
-      if re.search( '.py$', self.executable ):
-        cmd = '%s %s' % ( sys.executable, self.executable )
-      if self.arguments:
-        cmd = '%s %s' % ( cmd, self.arguments )
+    return self.command
 
-      self.log.info( 'Command is: %s' % cmd )
-      outputDict = shellCall( 0, cmd )
-      if not outputDict['OK']:
-        failed = True
-        self.log.error( 'Shell call execution failed:' )
-        self.log.error( outputDict['Message'] )
-      resTuple = outputDict['Value']
-      status = resTuple[0]
-      stdout = resTuple[1]
-      stderr = resTuple[2]
-      if status:
-        failed = True
-        self.log.error( 'Non-zero status %s while executing %s' % ( status, cmd ) )
-      else:
-        self.log.info( '%s execution completed with status %s' % ( self.executable, status ) )
+  def _executeCommand( self ):
+    ''' execute the self.command (uses shellCall)
+    '''
+    failed = False
 
-      self.log.verbose( stdout )
-      self.log.verbose( stderr )
-      if os.path.exists( self.applicationLog ):
-        self.log.verbose( 'Removing existing %s' % self.applicationLog )
-        os.remove( self.applicationLog )
-      fopen = open( '%s/%s' % ( os.getcwd(), self.applicationLog ), 'w' )
-      fopen.write( '<<<<<<<<<< %s Standard Output >>>>>>>>>>\n\n%s ' % ( self.executable, stdout ) )
-      if stderr:
-        fopen.write( '<<<<<<<<<< %s Standard Error >>>>>>>>>>\n\n%s ' % ( self.executable, stderr ) )
-      fopen.close()
-      self.log.info( 'Output written to %s, execution complete.' % ( self.applicationLog ) )
+    outputDict = shellCall( 0, self.command )
+    if not outputDict['OK']:
+      failed = True
+      self.log.error( 'Shell call execution failed:' )
+      self.log.error( outputDict['Message'] )
+    resTuple = outputDict['Value']
+    status = resTuple[0]
+    stdout = resTuple[1]
+    stderr = resTuple[2]
+    if status:
+      failed = True
+      self.log.error( 'Non-zero status %s while executing %s' % ( status, self.command ) )
+    else:
+      self.log.info( '%s execution completed with status %s' % ( self.executable, status ) )
 
-      if failed:
-        return S_ERROR( 'Exit Status %s' % ( status ) )
+    self.log.verbose( stdout )
+    self.log.verbose( stderr )
+    if os.path.exists( self.applicationLog ):
+      self.log.verbose( 'Removing existing %s' % self.applicationLog )
+      os.remove( self.applicationLog )
+    fopen = open( '%s/%s' % ( os.getcwd(), self.applicationLog ), 'w' )
+    fopen.write( '<<<<<<<<<< %s Standard Output >>>>>>>>>>\n\n%s ' % ( self.executable, stdout ) )
+    if stderr:
+      fopen.write( '<<<<<<<<<< %s Standard Error >>>>>>>>>>\n\n%s ' % ( self.executable, stderr ) )
+    fopen.close()
+    self.log.info( 'Output written to %s, execution complete.' % ( self.applicationLog ) )
 
-      return S_OK()
-
-    except Exception, e:
-      self.log.exception( e )
-      return S_ERROR( e )
-
-    finally:
-      super( Script, self ).finalize()
+    if failed:
+      raise RuntimeError, '%s Exited With Status %s' % ( os.path.basename( self.executable ), status )
 
 
-# EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#
+  def _finalize( self ):
+    ''' simply finalize
+    '''
+    status = '%s (%s %s) Successful' % ( os.path.basename( self.executable ),
+                                                           self.applicationName,
+                                                           self.applicationVersion )
+
+    self.setApplicationStatus( status )
+
+    raise GracefulTermination, status
