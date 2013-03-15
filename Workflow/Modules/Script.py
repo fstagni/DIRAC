@@ -26,6 +26,10 @@ class Script( ModuleBase ):
     self.arguments = ''
     self.step_commons = {}
 
+    self.environment = None
+    self.callbackFunction = None
+    self.bufferLimit = 52428800
+
   #############################################################################
 
   def _resolveInputVariables( self ):
@@ -43,7 +47,7 @@ class Script( ModuleBase ):
     ''' simple checks
     '''
     if not self.executable:
-      raise AttributeError, 'No executable defined'
+      raise RuntimeError, 'No executable defined'
 
   def _setCommand( self ):
     ''' set the command that will be executed
@@ -61,14 +65,15 @@ class Script( ModuleBase ):
 
     self.log.info( 'Command is: %s' % self.command )
 
-    return self.command
-
   def _executeCommand( self ):
     ''' execute the self.command (uses shellCall)
     '''
     failed = False
 
-    outputDict = shellCall( 0, self.command )
+    outputDict = shellCall( 0, self.command,
+                            env = self.environment,
+                            callbackFunction = self.callbackFunction,
+                            bufferLimit = self.bufferLimit )
     if not outputDict['OK']:
       failed = True
       self.log.error( 'Shell call execution failed:' )
@@ -103,8 +108,8 @@ class Script( ModuleBase ):
     ''' simply finalize
     '''
     status = '%s (%s %s) Successful' % ( os.path.basename( self.executable ),
-                                                           self.applicationName,
-                                                           self.applicationVersion )
+                                         self.applicationName,
+                                         self.applicationVersion )
 
     self.setApplicationStatus( status )
 

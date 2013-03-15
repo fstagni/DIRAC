@@ -14,11 +14,11 @@ class ModulesTestCase( unittest.TestCase ):
 #    sys.modules["DIRAC"] = DIRAC.ResourceStatusSystem.test.fake_Logger
 #    sys.modules["DIRAC.ResourceStatusSystem.Utilities.CS"] = DIRAC.ResourceStatusSystem.test.fake_Logger
 
-    jr_mock = Mock()
-    jr_mock.setApplicationStatus.return_value = {'OK': True, 'Value': ''}
-    jr_mock.generateRequest.return_value = {'OK': True, 'Value': 'pippo'}
-    jr_mock.setJobParameter.return_value = {'OK': True, 'Value': 'pippo'}
-#    jr_mock.setJobApplicationStatus.return_value = {'OK': True, 'Value': 'pippo'}
+    self.jr_mock = Mock()
+    self.jr_mock.setApplicationStatus.return_value = {'OK': True, 'Value': ''}
+    self.jr_mock.generateRequest.return_value = {'OK': True, 'Value': 'pippo'}
+    self.jr_mock.setJobParameter.return_value = {'OK': True, 'Value': 'pippo'}
+#    self.jr_mock.setJobApplicationStatus.return_value = {'OK': True, 'Value': 'pippo'}
 
     self.fr_mock = Mock()
     self.fr_mock.getFiles.return_value = {}
@@ -78,72 +78,72 @@ class ModulesTestCase( unittest.TestCase ):
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id, 'eventType': '123456789', 'jobType': 'merge',
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData', 'numberOfEvents':'100',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'runNumber':'Unknown', 'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'merge',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData', 'numberOfEvents':'100',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'runNumber':'Unknown',
                         'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'merge',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData', 'numberOfEvents':'100',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'merge',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData', 'numberOfEvents':'100',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'gaudiSteps': ['someApp_1'] },
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'runNumber':'Unknown', 'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'runNumber':'Unknown',
                         'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'InputData': '', 'gaudiSteps': ['someApp_1'] },
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'InputData': 'foo;bar', 'gaudiSteps': ['someApp_1'] },
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'InputData': 'foo;bar', 'ParametricInputData':'' ,
                         'gaudiSteps': ['someApp_1']},
                        {'PRODUCTION_ID': self.prod_id, 'JOB_ID': self.prod_job_id,
                         'configName': 'aConfigName', 'configVersion': 'aConfigVersion', 'outputDataFileMask':'', 'jobType': 'reco',
                         'BookkeepingLFNs':'aa', 'ProductionOutputData':'ProductionOutputData',
-                        'JobReport':jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
+                        'JobReport':self.jr_mock, 'Request':rc_mock, 'AccountingReport': ar_mock, 'FileReport':self.fr_mock,
                         'SystemConfig':'sys_config', 'LogFilePath':'someDir', 'LogTargetPath':'someOtherDir',
                         'runNumber':'Unknown', 'InputData': 'foo;bar', 'ParametricInputData':'pid1;pid2;pid3',
                         'gaudiSteps': ['someApp_1']},
@@ -178,8 +178,16 @@ class ModulesTestCase( unittest.TestCase ):
     from DIRAC.Workflow.Modules.ModuleBase import ModuleBase
     self.mb = ModuleBase( rm = self.rm_mock )
 
+    self.mb.request = self.rc_mock
+    self.mb.jobReport = self.jr_mock
+    self.mb.fileReport = self.fr_mock
+
     from DIRAC.Workflow.Modules.FailoverRequest import FailoverRequest
     self.fr = FailoverRequest( rm = self.rm_mock )
+
+    self.fr.request = self.rc_mock
+    self.fr.jobReport = self.jr_mock
+    self.fr.fileReport = self.fr_mock
 
 
   def tearDown( self ):
@@ -311,6 +319,59 @@ class ModuleBaseSuccess( ModulesTestCase ):
                      self.wf_commons, self.step_commons[0],
                      self.step_number, self.step_id )
     self.assertTrue( self.mb._enableModule() )
+
+
+  def test__determineStepInputData( self ):
+
+    self.mb.stepName = 'DaVinci_2'
+
+    inputData = 'previousStep'
+    self.mb.gaudiSteps = ['Brunel_1', 'DaVinci_2']
+    self.mb.workflow_commons = {'outputList': [{'stepName': 'Brunel_1',
+                                               'outputDataType': 'brunelhist',
+                                               'outputBKType': 'BRUNELHIST',
+                                               'outputDataSE': 'CERN-HIST',
+                                               'outputDataName': 'Brunel_00012345_00006789_1_Hist.root'},
+                                              {'stepName': 'Brunel_1',
+                                               'outputDataType': 'sdst',
+                                               'outputBKType': 'SDST',
+                                               'outputDataSE': 'Tier1-BUFFER',
+                                               'outputDataName': '00012345_00006789_1.sdst'}
+                                              ]
+                                }
+    self.mb.inputDataType = 'SDST'
+
+    first = self.mb._determineStepInputData( inputData )
+    second = ['00012345_00006789_1.sdst']
+    self.assertEqual( first, second )
+
+    inputData = 'previousStep'
+    self.mb.gaudiSteps = ['Brunel_1', 'DaVinci_2']
+    self.mb.workflow_commons['outputList'] = [{'stepName': 'Brunel_1',
+                                               'outputDataType': 'brunelhist',
+                                               'outputBKType': 'BRUNELHIST',
+                                               'outputDataSE': 'CERN-HIST',
+                                               'outputDataName': 'Brunel_00012345_00006789_1_Hist.root'},
+                                              {'stepName': 'Brunel_1',
+                                               'outputDataType': 'sdst',
+                                               'outputBKType': 'SDST',
+                                               'outputDataSE': 'Tier1-BUFFER',
+                                               'outputDataName': 'some.sdst'},
+                                              {'stepName': 'Brunel_1',
+                                               'outputDataType': 'sdst',
+                                               'outputBKType': 'SDST',
+                                               'outputDataSE': 'Tier1-BUFFER',
+                                               'outputDataName': '00012345_00006789_1.sdst'}
+                                              ]
+    self.mb.inputDataType = 'SDST'
+    first = self.mb._determineStepInputData( inputData )
+    second = ['some.sdst', '00012345_00006789_1.sdst']
+    self.assertEqual( first, second )
+
+    inputData = 'LFN:123.raw'
+    first = self.mb._determineStepInputData( inputData )
+    second = ['123.raw']
+    self.assertEqual( first, second )
 
 
 #############################################################################

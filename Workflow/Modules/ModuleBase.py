@@ -47,6 +47,10 @@ class ModuleBase( object ):
     self.workflow_commons = None
     self.step_commons = None
 
+    self.fileReport = None
+    self.jobReport = None
+    self.request = None
+
   #############################################################################
 
   def execute( self, production_id = None, prod_job_id = None, wms_job_id = None,
@@ -57,20 +61,20 @@ class ModuleBase( object ):
     '''
 
     if production_id:
-      self.production_id = production_id
+      self.production_id = int( production_id )
     else:
-      self.production_id = self.PRODUCTION_ID
+      self.production_id = int( self.PRODUCTION_ID )
 
     if prod_job_id:
-      self.prod_job_id = prod_job_id
+      self.prod_job_id = int( prod_job_id )
     else:
-      self.prod_job_id = self.JOB_ID
+      self.prod_job_id = int( self.JOB_ID )
 
     if os.environ.has_key( 'JOBID' ):
-      self.jobID = os.environ['JOBID']
+      self.jobID = int( os.environ['JOBID'] )
 
     if wms_job_id:
-      self.jobID = wms_job_id
+      self.jobID = int( wms_job_id )
 
     if workflowStatus:
       self.workflowStatus = workflowStatus
@@ -85,14 +89,14 @@ class ModuleBase( object ):
       self.step_commons = step_commons
 
     if step_number:
-      self.step_number = step_number
+      self.step_number = int( step_number )
     else:
-      self.step_number = self.STEP_NUMBER
+      self.step_number = int( self.STEP_NUMBER )
 
     if step_id:
       self.step_id = step_id
     else:
-      self.step_id = '%s_%s_%s' % ( self.production_id, self.prod_job_id, self.step_number )
+      self.step_id = '%s_%s_%s' % ( str( self.production_id ), str( self.prod_job_id ), str( self.step_number ) )
 
     try:
       # This is what has to be extended in the modules
@@ -128,11 +132,11 @@ class ModuleBase( object ):
 
   def _execute( self ):
     ''' TBE '''
-    return S_OK()
+    pass
 
   def _finalize( self ):
     ''' TBE '''
-    raise GracefulTermination, 'Correctly finalized'
+    raise GracefulTermination, '%s correctly finalized' % str( self.__class__ )
 
   #############################################################################
 
@@ -152,9 +156,12 @@ class ModuleBase( object ):
     self.log.verbose( "workflow_commons = ", self.workflow_commons )
     self.log.verbose( "step_commons = ", self.step_commons )
 
-    self.fileReport = self._getFileReporter()
-    self.jobReport = self._getJobReporter()
-    self.request = self._getRequestContainer()
+    if not self.fileReport:
+      self.fileReport = self._getFileReporter()
+    if not self.jobReport:
+      self.jobReport = self._getJobReporter()
+    if not self.request:
+      self.request = self._getRequestContainer()
 
     self._resolveInputWorkflow()
 

@@ -1,21 +1,21 @@
-""" Create and send a combined request for any pending operations at
+''' Create and send a combined request for any pending operations at
     the end of a job:
       fileReport (for the transformation)
       jobReport (for jobs)
       accounting
       request (for failover)
-"""
+'''
 
-from DIRAC import gLogger
-from DIRAC.Workflow.Modules.ModuleBase import ModuleBase, GracefulTermination
+from DIRAC                              import gLogger
+from DIRAC.Workflow.Modules.ModuleBase  import ModuleBase, GracefulTermination
 
 class FailoverRequest( ModuleBase ):
 
   #############################################################################
 
   def __init__( self, rm = None ):
-    """Module initialization.
-    """
+    '''Module initialization.
+    '''
 
     self.log = gLogger.getSubLogger( "FailoverRequest" )
     super( FailoverRequest, self ).__init__( self.log, rm = rm )
@@ -25,12 +25,10 @@ class FailoverRequest( ModuleBase ):
   #############################################################################
 
   def _resolveInputVariables( self ):
-    """ By convention the module input parameters are resolved here.
-    """
+    ''' By convention the module input parameters are resolved here.
+    '''
     super( FailoverRequest, self )._resolveInputVariables()
     super( FailoverRequest, self )._resolveInputStep()
-
-  #############################################################################
 
   def _initialize( self ):
     ''' checks if is to do, then prepare few things
@@ -122,12 +120,10 @@ class FailoverRequest( ModuleBase ):
         digest = result['Value']
         self.log.info( digest )
 
-  #############################################################################
-
   def _finalize( self ):
-    """ Finalize and report correct status for the workflow based on the workflow
+    ''' Finalize and report correct status for the workflow based on the workflow
         or step status.
-    """
+    '''
     self.log.verbose( 'Workflow status = %s, step status = %s' % ( self.workflowStatus['OK'], self.stepStatus['OK'] ) )
     if not self.workflowStatus['OK'] or not self.stepStatus['OK']:
       self.log.warn( 'Workflow status is not ok, will not overwrite status' )
@@ -135,6 +131,7 @@ class FailoverRequest( ModuleBase ):
       raise RuntimeError, 'Workflow failed, FailoverRequest module completed'
 
     self.log.info( 'Workflow successful, end of FailoverRequest module execution.' )
+
     raise GracefulTermination, 'FailoverRequest module completed'
 
 # EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#
