@@ -41,6 +41,7 @@ class ModuleBase( object ):
     self.jobID = ''
     self.step_number = ''
     self.step_id = ''
+    self.jobType = ''
 
     self.workflowStatus = None
     self.stepStatus = None
@@ -449,6 +450,7 @@ class ModuleBase( object ):
       self.log.info( 'No outputDataFileMask provided, the files with all the extensions will be considered' )
 
     if stepMask:
+      # FIXME: this supposes that the LFN contains the step id
       for fileName, metadata in candidateFiles.items():
         if fileName.split( '_' )[-1].split( '.' )[0] not in stepMask:
           del( candidateFiles[fileName] )
@@ -498,7 +500,7 @@ class ModuleBase( object ):
 
 #############################################################################
 
-class GracefulTermination(Exception):
+class GracefulTermination( Exception ):
   pass
 
 #############################################################################

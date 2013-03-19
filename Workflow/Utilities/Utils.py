@@ -3,11 +3,11 @@
 
 import os, time
 
-from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getVO, getCSExtensions
+from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals     import getVO, getCSExtensions
 
-from DIRAC.Core.Workflow.Module import ModuleDefinition
-from DIRAC.Core.Workflow.Parameter import Parameter
-from DIRAC.Core.Workflow.Step import StepDefinition
+from DIRAC.Core.Workflow.Module                             import ModuleDefinition
+from DIRAC.Core.Workflow.Parameter                          import Parameter
+from DIRAC.Core.Workflow.Step                               import StepDefinition
 
 #############################################################################
 
