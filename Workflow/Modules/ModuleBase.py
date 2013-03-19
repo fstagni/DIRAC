@@ -1,4 +1,13 @@
-''' ModuleBase - contains the base class for workflow modules. Defines several common utility methods
+''' ModuleBase - contains the base class for workflow modules. Defines several common utility methods.
+
+    The modules defined within this package are developed in a way to be executed by a DIRAC.Core.Worfklow.Worfklow.
+    In particular, a DIRAC.Core.Workflow.Worfklow object will only call the "execute" function, that is defined here.
+
+    These modules, inspired by the LHCb experience, give the possibility to define simple user and production jobs.
+    Many VOs might want to extend this package. And actually, for some cases, it will be necessary. For example,
+    defining the LFN output at runtime (within the "UploadOutputs" module is a VO specific operation.
+
+    The DIRAC APIs are used to create Jobs that make use of these modules.
 '''
 
 import os, copy
@@ -13,12 +22,18 @@ from DIRAC.DataManagementSystem.Client.ReplicaManager       import ReplicaManage
 
 class ModuleBase( object ):
   ''' Base class for Modules - works only within DIRAC workflows
+
+      This module, inheriting by "object", can use cooperative methods, very useful here.
   '''
 
   #############################################################################
 
   def __init__( self, loggerIn = None, operationsHelperIn = None, rm = None ):
     ''' Initialization of module base.
+
+        loggerIn is a logger object that can be passed so that the logging will be more clear.
+        operationsHelperIn has to be a DIRAC.ConfigurationSystem.Client.Helpers.Operations.Operations object
+        rm has to be a DIRAC.DataManagementSystem.Client.ReplicaManager.ReplicaManager object
     '''
 
     if not loggerIn:
@@ -42,6 +57,7 @@ class ModuleBase( object ):
     self.step_number = ''
     self.step_id = ''
     self.jobType = ''
+    self.command = None
 
     self.workflowStatus = None
     self.stepStatus = None
@@ -58,22 +74,41 @@ class ModuleBase( object ):
                workflowStatus = None, stepStatus = None,
                wf_commons = None, step_commons = None,
                step_number = None, step_id = None ):
-    ''' Function called by all super classes
+    ''' Function called by all super classes. This is the only function that Workflow will call automatically.
+
+        The design adopted here is that all the modules are inheriting from this class,
+        and will NOT override this module. Instead, the inherited modules will override the following methods:
+        _resolveInputVariables()
+        _initialize()
+        _setCommand()
+        _executeCommand()
+        _execute()
+        that are called here exactly in this order.
+        Each implementation of these functions, in the subclasses, should never return S_OK, S_ERROR.
+        This choice has been made for convenience of coding, and for the high level of inheritance implemented here.
+        Instead, they should return:
+        - None when no issues arise
+        - a RuntimeError when there are issues
+        - a GracefulTermination exception (defined also here) when the module should be terminated gracefully
+
+        The various parameters in input to this method are used almost only for testing purposes.
     '''
 
     if production_id:
       self.production_id = int( production_id )
     else:
+      # self.PRODUCTION_ID is always set by the workflow
       self.production_id = int( self.PRODUCTION_ID )
 
     if prod_job_id:
       self.prod_job_id = int( prod_job_id )
     else:
+      # self.JOB_ID is set by the workflow, but this is not the WMS job id, but the transformation (production) task id
       self.prod_job_id = int( self.JOB_ID )
 
     if os.environ.has_key( 'JOBID' ):
+      # this is the real wms job ID
       self.jobID = int( os.environ['JOBID'] )
-
     if wms_job_id:
       self.jobID = int( wms_job_id )
 
@@ -92,6 +127,7 @@ class ModuleBase( object ):
     if step_number:
       self.step_number = int( step_number )
     else:
+      # self.STEP_NUMBER is always set by the workflow
       self.step_number = int( self.STEP_NUMBER )
 
     if step_id:
@@ -119,39 +155,14 @@ class ModuleBase( object ):
     finally:
       self.finalize()
 
-  def _initialize( self ):
-    ''' TBE '''
-    pass
-
-  def _setCommand( self ):
-    ''' TBE '''
-    self.command = None
-
-  def _executeCommand( self ):
-    ''' TBE '''
-    pass
-
-  def _execute( self ):
-    ''' TBE '''
-    pass
-
-  def _finalize( self ):
-    ''' TBE '''
-    raise GracefulTermination, '%s correctly finalized' % str( self.__class__ )
-
-  #############################################################################
-
-  def finalize( self ):
-    ''' Just finalizing the module execution
-    '''
-
-    self.log.flushAllMessages( 0 )
-    self.log.info( '===== Terminating ' + str( self.__class__ ) + ' ===== ' )
-
-  #############################################################################
-
   def _resolveInputVariables( self ):
     ''' By convention the module input parameters are resolved here.
+        fileReport, jobReport, and request objects are instantiated/recorded here.
+
+        This will also call the resolution of the input workflow.
+        The resolution of the input step should instead be done on a step basis.
+
+        NB: Never forget to call this base method when extending it.
     '''
 
     self.log.verbose( "workflow_commons = ", self.workflow_commons )
@@ -165,6 +176,50 @@ class ModuleBase( object ):
       self.request = self._getRequestContainer()
 
     self._resolveInputWorkflow()
+
+  def _initialize( self ):
+    ''' TBE
+
+        For initializing the module, whatever operation this can be
+    '''
+    pass
+
+  def _setCommand( self ):
+    ''' TBE
+
+        For "executors" modules, set the command to be used in the self.command variable.
+    '''
+    pass
+
+  def _executeCommand( self ):
+    ''' TBE
+
+        For "executors" modules, executes self.command as set in the _setCommand() method
+    '''
+    pass
+
+  def _execute( self ):
+    ''' TBE
+
+        Executes, whatever this means for the module implementing it
+    '''
+    pass
+
+  def _finalize( self ):
+    ''' TBE
+
+        By default, the module finalizes correctly
+    '''
+    raise GracefulTermination, '%s correctly finalized' % str( self.__class__ )
+
+  #############################################################################
+
+  def finalize( self ):
+    ''' Just finalizing the module execution by flushing the logs. This will be done always.
+    '''
+
+    self.log.flushAllMessages( 0 )
+    self.log.info( '===== Terminating ' + str( self.__class__ ) + ' ===== ' )
 
   #############################################################################
 
@@ -297,7 +352,7 @@ class ModuleBase( object ):
   #############################################################################
 
   def setApplicationStatus( self, status, sendFlag = True, jr = None ):
-    '''Wraps around setJobApplicationStatus of state update client
+    ''' Wraps around setJobApplicationStatus of state update client
     '''
     if not self._WMSJob():
       return S_OK( 'JobID not defined' )  # e.g. running locally prior to submission
@@ -352,7 +407,7 @@ class ModuleBase( object ):
   #############################################################################
 
   def setJobParameter( self, name, value, sendFlag = True, jr = None ):
-    '''Wraps around setJobParameter of state update client
+    ''' Wraps around setJobParameter of state update client
     '''
     if not self._WMSJob():
       return S_OK( 'JobID not defined' )  # e.g. running locally prior to submission
