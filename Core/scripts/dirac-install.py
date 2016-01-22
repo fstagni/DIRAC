@@ -928,15 +928,15 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
   #     pass
   #     #os.unlink( tarPath )
 
-  postInstallScript = os.path.join( cliParams.targetPath, pkgName, 'dirac-postInstall.py' )
-  if os.path.isfile( postInstallScript ):
-    os.chmod( postInstallScript , executablePerms )
-    logNOTICE( "Executing %s..." % postInstallScript )
-    if os.system( "python '%s' > '%s.out' 2> '%s.err'" % ( postInstallScript,
-                                                           postInstallScript,
-                                                           postInstallScript ) ):
-      logERROR( "Post installation script %s failed. Check %s.err" % ( postInstallScript,
-                                                                       postInstallScript ) )
+  # postInstallScript = os.path.join( cliParams.targetPath, pkgName, 'dirac-postInstall.py' )
+  # if os.path.isfile( postInstallScript ):
+  #   os.chmod( postInstallScript , executablePerms )
+  #   logNOTICE( "Executing %s..." % postInstallScript )
+  #   if os.system( "python '%s' > '%s.out' 2> '%s.err'" % ( postInstallScript,
+  #                                                          postInstallScript,
+  #                                                          postInstallScript ) ):
+  #     logERROR( "Post installation script %s failed. Check %s.err" % ( postInstallScript,
+  #                                                                      postInstallScript ) )
   return True
 
 def fixBuildPaths():
