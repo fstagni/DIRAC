@@ -912,7 +912,7 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
   #  tf.extract( member )
   #os.chdir(cwd)
   tarCmd = "tar -xvzf '%s' -C '%s'" % ( tarPath, cliParams.targetPath )
-  print tarCmd
+  print "AAAAAAAAAAAAAAA", tarCmd
   res = os.system( tarCmd )
   print res
   if res:
@@ -1238,7 +1238,7 @@ def installExternals( releaseConfig ):
     if not downloadAndExtractTarball( tarsURL, "Externals", extVer, cache = True ):
       return ( not cliParams.noAutoBuild ) and compileExternals( externalsVersion )
     logNOTICE( "Fixing externals paths..." )
-    fixBuildPaths()
+    # fixBuildPaths()
   logNOTICE( "Running externals post install..." )
   # checkPlatformAliasLink()
   #lcg utils?
