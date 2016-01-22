@@ -919,14 +919,14 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
     print "Exit with error %d" %res
     return False
   #Delete tar
-  if cache:
-    if not os.path.isdir( cacheDir ):
-      os.makedirs( cacheDir )
-    os.rename( tarPath, tarCachePath )
-  else:
-    if tarPath != tarFileCVMFS:
-      pass
-      #os.unlink( tarPath )
+  # if cache:
+  #   if not os.path.isdir( cacheDir ):
+  #     os.makedirs( cacheDir )
+  #   os.rename( tarPath, tarCachePath )
+  # else:
+  #   if tarPath != tarFileCVMFS:
+  #     pass
+  #     #os.unlink( tarPath )
 
   postInstallScript = os.path.join( cliParams.targetPath, pkgName, 'dirac-postInstall.py' )
   if os.path.isfile( postInstallScript ):
@@ -1240,7 +1240,7 @@ def installExternals( releaseConfig ):
     logNOTICE( "Fixing externals paths..." )
     fixBuildPaths()
   logNOTICE( "Running externals post install..." )
-  checkPlatformAliasLink()
+  # checkPlatformAliasLink()
   #lcg utils?
   #LCG utils if required
   lcgVer = releaseConfig.getLCGVersion( cliParams.lcgVer )
