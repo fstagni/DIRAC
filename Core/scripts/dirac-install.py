@@ -914,6 +914,7 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
   tarCmd = "tar -xvzf '%s' -C '%s'" % ( tarPath, cliParams.targetPath )
   print tarCmd
   res = os.system( tarCmd )
+  print res
   if res:
     print "Exit with error %d" %res
     return False
@@ -924,7 +925,8 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
     os.rename( tarPath, tarCachePath )
   else:
     if tarPath != tarFileCVMFS:
-      os.unlink( tarPath )
+      pass
+      #os.unlink( tarPath )
 
   postInstallScript = os.path.join( cliParams.targetPath, pkgName, 'dirac-postInstall.py' )
   if os.path.isfile( postInstallScript ):
