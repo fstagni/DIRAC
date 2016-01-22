@@ -737,7 +737,7 @@ platformAlias = {}
 # Start of helper functions
 ####
 
-def logDEBUG( msg ):
+def logNOTICE( msg ):
   if cliParams.debug:
     for line in msg.split( "\n" ):
       print "%s UTC dirac-install [DEBUG] %s" % ( time.strftime( '%Y-%m-%d %H:%M:%S', time.gmtime() ), line )
@@ -767,7 +767,7 @@ def urlretrieveTimeout( url, fileName = '', timeout = 0 ):
   """
   # NOTE: Not thread-safe, since all threads will catch same alarm.
   #       This is OK for dirac-install, since there are no threads.
-  logDEBUG( 'Retrieving remote file "%s"' % url )
+  logNOTICE( 'Retrieving remote file "%s"' % url )
 
   urlData = ''
   if timeout:
@@ -912,7 +912,10 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
   #  tf.extract( member )
   #os.chdir(cwd)
   tarCmd = "tar xzf '%s' -C '%s'" % ( tarPath, cliParams.targetPath )
-  os.system( tarCmd )
+  res = os.system( tarCmd )
+  if res:
+    print "Exit with error %d" %res
+    return False
   #Delete tar
   if cache:
     if not os.path.isdir( cacheDir ):
@@ -964,13 +967,13 @@ def runExternalsPostInstall():
   """
   postInstallPath = os.path.join( cliParams.targetPath, cliParams.platform, "postInstall" )
   if not os.path.isdir( postInstallPath ):
-    logDEBUG( "There's no %s directory. Skipping postInstall step" % postInstallPath )
+    logNOTICE( "There's no %s directory. Skipping postInstall step" % postInstallPath )
     return
   postInstallSuffix = "-postInstall"
   for scriptName in os.listdir( postInstallPath ):
     suffixFindPos = scriptName.find( postInstallSuffix )
     if suffixFindPos == -1 or not suffixFindPos == len( scriptName ) - len( postInstallSuffix ):
-      logDEBUG( "%s does not have the %s suffix. Skipping.." % ( scriptName, postInstallSuffix ) )
+      logNOTICE( "%s does not have the %s suffix. Skipping.." % ( scriptName, postInstallSuffix ) )
       continue
     scriptPath = os.path.join( postInstallPath, scriptName )
     os.chmod( scriptPath , executablePerms )
@@ -1083,7 +1086,7 @@ def loadConfiguration():
 
   releaseConfig = ReleaseConfig( instName = cliParams.installation, globalDefaultsURL = cliParams.globalDefaults )
   if cliParams.debug:
-    releaseConfig.setDebugCB( logDEBUG )
+    releaseConfig.setDebugCB( logNOTICE )
 
   result = releaseConfig.loadInstallationDefaults()
   if not result[ 'OK' ]:
@@ -1226,9 +1229,9 @@ def installExternals( releaseConfig ):
   if cliParams.buildExternals:
     compileExternals( externalsVersion )
   else:
-    logDEBUG( "Using platform: %s" % cliParams.platform )
+    logNOTICE( "Using platform: %s" % cliParams.platform )
     extVer = "%s-%s-%s-python%s" % ( cliParams.externalsType, externalsVersion, cliParams.platform, cliParams.pythonVersion )
-    logDEBUG( "Externals %s are to be installed" % extVer )
+    logNOTICE( "Externals %s are to be installed" % extVer )
     if not downloadAndExtractTarball( tarsURL, "Externals", extVer, cache = True ):
       return ( not cliParams.noAutoBuild ) and compileExternals( externalsVersion )
     logNOTICE( "Fixing externals paths..." )
@@ -1464,7 +1467,7 @@ if __name__ == "__main__":
     if os.path.isfile( ddeLocation ):
       os.system( ddeLocation )
     else:
-      logDEBUG( "No dirac-deploy-scripts found. This doesn't look good" )
+      logNOTICE( "No dirac-deploy-scripts found. This doesn't look good" )
   else:
     logNOTICE( "Skipping installing DIRAC" )
   logNOTICE( "Installing %s externals..." % cliParams.externalsType )
