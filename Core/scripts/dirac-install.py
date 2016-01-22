@@ -912,7 +912,7 @@ def downloadAndExtractTarball( tarsURL, pkgName, pkgVer, checkHash = True, cache
   #  tf.extract( member )
   #os.chdir(cwd)
   tarCmd = "tar -xvzf '%s' -C '%s'" % ( tarPath, cliParams.targetPath )
-  print tarCmdtarCmd
+  print tarCmd
   res = os.system( tarCmd )
   if res:
     print "Exit with error %d" %res
