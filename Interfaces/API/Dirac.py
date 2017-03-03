@@ -444,7 +444,7 @@ class Dirac( API ):
     else:
       jdl = job
 
-    if not re.search( '\[', jdl ):
+    if not re.search( r'\[', jdl ):
       jdl = '[' + jdl + ']'
     classAdJob = ClassAd( jdl )
 
@@ -717,64 +717,6 @@ class Dirac( API ):
     return result
 
   #############################################################################
-  # FIXME: this seems unused
-  def _runInputDataResolution( self, inputData, site = None ):
-    """ Run the VO plugin input data resolution mechanism.
-    """
-    localSEList = gConfig.getValue( '/LocalSite/LocalSE', '' )
-    if not localSEList:
-      return self._errorReport( 'LocalSite/LocalSE should be defined in your config file' )
-    if re.search( ',', localSEList ):
-      localSEList = localSEList.replace( ' ', '' ).split( ',' )
-    else:
-      localSEList = [localSEList.replace( ' ', '' )]
-    self.log.verbose( 'Local SEs:', localSEList )
-    inputDataModule = self.__getVOPolicyModule( 'InputDataModule' )
-    if not inputDataModule:
-      return self._errorReport( 'Could not retrieve DIRAC/VOPolicy/InputDataModule for VO' )
-
-    self.log.info( 'Job has input data requirement, will attempt to resolve data for %s' % DIRAC.siteName() )
-    self.log.verbose( '\n'.join( inputData ) )
-    replicaDict = self.getReplicasForJobs( inputData )
-    if not replicaDict['OK']:
-      return replicaDict
-    catalogFailed = replicaDict['Value'].get( 'Failed', {} )
-
-    guidDict = self.getMetadata( inputData )
-    if not guidDict['OK']:
-      return guidDict
-    for lfn, reps in replicaDict['Value']['Successful'].iteritems():
-      guidDict['Value']['Successful'][lfn].update( reps )
-    resolvedData = guidDict
-    diskSE = gConfig.getValue( self.section + '/DiskSE', ['-disk', '-DST', '-USER', '-FREEZER'] )
-    tapeSE = gConfig.getValue( self.section + '/TapeSE', ['-tape', '-RDST', '-RAW'] )
-    configDict = {'JobID':None, 'LocalSEList':localSEList, 'DiskSEList':diskSE, 'TapeSEList':tapeSE}
-    self.log.debug( configDict )
-    if site:
-      configDict.update( {'SiteName':site} )
-    argumentsDict = {'FileCatalog':resolvedData, 'Configuration':configDict, 'InputData':inputData}
-    self.log.debug( argumentsDict )
-    moduleFactory = ModuleFactory()
-    moduleInstance = moduleFactory.getModule( inputDataModule, argumentsDict )
-    if not moduleInstance['OK']:
-      self.log.warn( 'Could not create InputDataModule' )
-      return moduleInstance
-
-    module = moduleInstance['Value']
-    result = module.execute()
-    if not result['OK']:
-      self.log.error( 'Input data resolution failed' )
-
-    if catalogFailed:
-      self.log.error( 'Replicas not found for the following files:' )
-      for key, value in catalogFailed.iteritems():
-        self.log.error( '%s %s' % ( key, value ) )
-      if 'Failed' in result:
-        result['Failed'] = catalogFailed.keys()
-
-    return result
-
-  #############################################################################
   def runLocal( self, jobJDL, jobXML, baseDir, disableCallback = False ):
     """ Internal function.  This method is equivalent to submitJob(job,mode='Local').
         All output files are written to the local directory.
@@ -785,6 +727,8 @@ class Dirac( API ):
     shutil.copy( jobXML, '%s/%s' % ( os.getcwd(), os.path.basename( jobXML ) ) )
 
     # If not set differently in the CS use the root from the current DIRAC installation
+    self.log.debug( 'Value of /LocalSite/Root: %s' % gConfig.getValue( '/LocalSite/Root') )
+    self.log.debug( 'Value of DIRAC.rootPath: %s' % DIRAC.rootPath )
     siteRoot = gConfig.getValue( '/LocalSite/Root', DIRAC.rootPath )
 
     self.log.info( 'Preparing environment for site %s to execute job' % DIRAC.siteName() )
@@ -2593,7 +2537,7 @@ class Dirac( API ):
 
     try:
       parameters = {}
-      if not re.search( '\[', jdl ):
+      if not re.search( r'\[', jdl ):
         jdl = '[' + jdl + ']'
       classAdJob = ClassAd( jdl )
       paramsDict = classAdJob.contents
