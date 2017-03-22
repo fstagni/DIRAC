@@ -48,13 +48,13 @@ class HTCondorCETests( unittest.TestCase ):
     ## force there to be an empty line
 
     expectedResults = {
-      "104097.9": "Running",
-      "104098.0": "Waiting",
-      "104098.1": "Done",
-      "104098.2": "Aborted",
-      "104098.3": "HELD",
-      "104098.4": "Unknown",
-    }
+        "104097.9": "Running",
+        "104098.0": "Waiting",
+        "104098.1": "Done",
+        "104098.2": "Aborted",
+        "104098.3": "HELD",
+        "104098.4": "Unknown",
+        }
     for jobID, expected in expectedResults.iteritems():
       self.assertEqual( HTCE.parseCondorStatus( statusLines, jobID ), expected )
 
@@ -63,10 +63,10 @@ class HTCondorCETests( unittest.TestCase ):
     htce = HTCE.HTCondorCEComputingElement( 12345 )
 
     with patch( MODNAME+".commands.getstatusoutput", new=Mock(
-      side_effect=( [ (0, "\n".join(STATUS_LINES) ), # condor_q
-                      (0, "\n".join(HISTORY_LINES)), # condor_history
-                      (0, 0), # condor_rm, ignored in any case
-                    ] ))), \
+        side_effect=( [ (0, "\n".join(STATUS_LINES) ), # condor_q
+                        (0, "\n".join(HISTORY_LINES)), # condor_history
+                        (0, 0), # condor_rm, ignored in any case
+                      ] ))), \
       patch( MODNAME+".HTCondorCEComputingElement._HTCondorCEComputingElement__cleanup", new=Mock() ) \
       :
       ret = htce.getJobStatus( ["htcondorce://condorce.foo.arg/123.0:::abc321",
@@ -168,21 +168,22 @@ class HTCondorCETests( unittest.TestCase ):
     remotePoolList = " ".join([ '-pool', '%s:9619'%ceName, '-remote', ceName ])
     self.assertIn( remotePoolList, " ".join(execMock.call_args_list[0][0][1]) )
 
-
 class BatchCondorTest( unittest.TestCase ):
   """ tests for the plain batchSystem Condor Module """
 
   def test_getJobStatus( self ):
-
+    """ Test of getJobStatus
+    """
     with patch( MODNAME+".commands.getstatusoutput", new=Mock(
-      side_effect=( [ (0, "\n".join(STATUS_LINES) ), # condor_q
-                      (0, "\n".join(HISTORY_LINES)), # condor_history
-                    ] ))):
+        side_effect=( [ (0, "\n".join(STATUS_LINES) ), # condor_q
+                        (0, "\n".join(HISTORY_LINES)), # condor_history
+                      ] ))):
       ret = Condor.Condor().getJobStatus( JobIDList = [ "123.0",
                                                         "123.1",
                                                         "123.2",
                                                         "333.3",
-                                                      ]
+                                                      ],
+                                          User = 'justAUser'
                                         )
 
     expectedResults = { "123.0":"Done",
@@ -193,6 +194,22 @@ class BatchCondorTest( unittest.TestCase ):
 
     self.assertEqual( ret['Status'] , 0 )
     self.assertEqual( expectedResults, ret['Jobs'] )
+
+  def test_getCEStatus(self):
+    """ Test of getCEStatus
+    """
+    ret = Condor.Condor().getCEStatus(User = 'justAUser')
+    self.assertTrue( ret['Status'] )
+
+    with patch( MODNAME+".commands.getstatusoutput", new=Mock(
+        side_effect=( [ (0, "\n".join(STATUS_LINES) ), # condor_q
+                        (0, "\n".join(HISTORY_LINES)), # condor_history
+                      ] ))):
+
+      ret = Condor.Condor().getCEStatus(User = 'justAUser')
+      self.assertEqual( ret['Status'], 0 )
+
+
 
 if __name__ == '__main__':
   SUITE = unittest.defaultTestLoader.loadTestsFromTestCase( HTCondorCETests )

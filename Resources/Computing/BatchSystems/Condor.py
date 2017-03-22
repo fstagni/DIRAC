@@ -178,7 +178,7 @@ class Condor( object ):
 
     MANDATORY_PARAMETERS = [ 'JobIDList' ]
     for argument in MANDATORY_PARAMETERS:
-      if not argument in kwargs:
+      if argument not in kwargs:
         resultDict['Status'] = -1
         resultDict['Message'] = 'No %s' % argument
         return resultDict
