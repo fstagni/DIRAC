@@ -30,14 +30,15 @@ g_dDecodeFunctions = {}
 #Encoding and decoding ints
 def encodeInt( iValue ):
   #eList.extend( ( "i", str( iValue ), "e" ) )
-  return json.dumps(iValue)
+  eDict = {"__type__": 'i', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 def decodeInt( data ):
   #i += 1
 #  end = data.index( 'e', i )
 #  value = int( data[i:end] )
 #  return ( value, end + 1 )
-  return json.loads(data)
+  return int(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.IntType ] = encodeInt
 g_dDecodeFunctions[ "i" ] = decodeInt
@@ -46,14 +47,15 @@ g_dDecodeFunctions[ "i" ] = decodeInt
 def encodeLong( iValue ):
   # corrected by KGG   eList.extend( ( "l", str( iValue ), "e" ) )
   #eList.extend( ( "I", str( iValue ), "e" ) )
-  return json.dumps(iValue)
+  eDict = {"__type__": 'I', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 def decodeLong( data ):
 #  i += 1
 #  end = data.index( 'e', i )
 #  value = long( data[i:end] )
 #  return ( value, end + 1 )
-  return json.loads(data)
+  return long(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.LongType ] = encodeLong
 g_dDecodeFunctions[ "I" ] = decodeLong
@@ -61,7 +63,8 @@ g_dDecodeFunctions[ "I" ] = decodeLong
 #Encoding and decoding floats
 def encodeFloat( iValue ):
   #eList.extend( ( "f", str( iValue ), "e" ) )
-  return json.dumps(iValue)
+  eDict = {"__type__": 'f', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 def decodeFloat( data ):
 #  i += 1
@@ -73,7 +76,7 @@ def decodeFloat( data ):
 #  else:
 #    value = float( data[i:end] )
 #  return ( value, end + 1 )
-  return json.loads(data)
+  return float(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.FloatType ] = encodeFloat
 g_dDecodeFunctions[ "f" ] = decodeFloat
@@ -84,7 +87,8 @@ def encodeBool( bValue ):
 #    eList.append( "b1" )
 #  else:
 #    eList.append( "b0" )
-  return json.dumps(bValue)
+  eDict = {"__type__": 'b', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 def decodeBool( data ):
   #if data[ i + 1 ] == "0":
@@ -94,7 +98,7 @@ def decodeBool( data ):
   #else:
     #return ( True, i + 2 )
     #return True
-  return json.loads(bValue)
+  return bool(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.BooleanType ] = encodeBool
 g_dDecodeFunctions[ "b" ] = decodeBool
@@ -102,7 +106,8 @@ g_dDecodeFunctions[ "b" ] = decodeBool
 #Encoding and decoding strings
 def encodeString( sValue ):
 #  eList.extend( ( 's', str( len( sValue ) ), ':', sValue ) )
-  return json.dumps(sValue)
+  eDict = {"__type__": 's', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
 def decodeString( data ):
@@ -111,8 +116,10 @@ def decodeString( data ):
   #value = int( data[ i : colon ] )
   #colon += 1
   #end = colon + value
-  return json.loads(data)
+  #value = json.loads(data)
+  #return value.encode('utf-8', 'strict')
   #return ( data[ colon : end] , end )
+  return str(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.StringType ] = encodeString
 g_dDecodeFunctions[ "s" ] = decodeString
@@ -121,7 +128,8 @@ g_dDecodeFunctions[ "s" ] = decodeString
 def encodeUnicode( sValue ):
   #valueStr = sValue.encode( 'utf-8' )
   #eList.extend( ( 'u', str( len( valueStr ) ), ':', valueStr ) )
-  return json.dumps(sValue)
+  eDict = {"__type__": 'u', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
 def decodeUnicode( data ):
@@ -131,7 +139,9 @@ def decodeUnicode( data ):
   #colon += 1
   #end = colon + value
   #return ( unicode( data[ colon : end], 'utf-8' ) , end )
-  return json.loads(data)
+  #value = json.loads(data)
+  #return value.encode('utf-8', 'strict')
+  return unicode(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.UnicodeType ] = encodeUnicode
 g_dDecodeFunctions[ "u" ] = decodeUnicode
@@ -181,12 +191,13 @@ g_dDecodeFunctions[ 'z' ] = decodeDateTime
 #Encoding and decoding None
 def encodeNone( oValue ):
 #  eList.append( "n" )
-  return json.dumps(oValue)
+  eDict = {"__type__": 'n', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
-def decodeNone( data, i ):
+def decodeNone( data ):
   #return ( None, i + 1 )
-  return json.loads(data)
+  return None
 
 g_dEncodeFunctions[ types.NoneType ] = encodeNone
 g_dDecodeFunctions[ 'n' ] = decodeNone
@@ -197,7 +208,8 @@ def encodeList( lValue ):
 #  for uObject in lValue:
 #    g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )
 #  eList.append( "e" )
-  return json.dumps(lValue)
+  eDict = {"__type__": 'l', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
 def decodeList( data ):
@@ -207,7 +219,7 @@ def decodeList( data ):
     #ob, i = g_dDecodeFunctions[ data[ i ] ]( data, i )
     #oL.append( ob )
   #return( oL, i + 1 )
-  return json.loads(data)
+  return list(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.ListType ] = encodeList
 g_dDecodeFunctions[ "l" ] = decodeList
@@ -218,13 +230,14 @@ def encodeTuple( lValue ):
 #  for uObject in lValue:
 #    g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )
 #  eList.append( "e" )
-  return json.dumps(lValue)
+  eDict = {"__type__": 't', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
 def decodeTuple( data ):
   #oL, i = decodeList( data, i )
   #return ( tuple( oL ), i )
-  return json.loads(data)
+  return tuple(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.TupleType ] = encodeTuple
 g_dDecodeFunctions[ "t" ] = decodeTuple
@@ -236,7 +249,8 @@ def encodeDict( dValue ):
 #    g_dEncodeFunctions[ type( key ) ]( key, eList )
 #    g_dEncodeFunctions[ type( dValue[key] ) ]( dValue[key], eList )
 #  eList.append( "e" )
-  return json.dumps(dValue)
+  eDict = {"__type__": 'd', "__value__": json.dumps(iValue)}
+  return str(eDict)
 
 
 def decodeDict( data ):
@@ -246,7 +260,7 @@ def decodeDict( data ):
     #k, i = g_dDecodeFunctions[ data[ i ] ]( data, i )
     #oD[ k ], i = g_dDecodeFunctions[ data[ i ] ]( data, i )
   #return ( oD, i + 1 )
-  return json.loads(data)
+  return dict(json.loads(data)["__value__"])
 
 g_dEncodeFunctions[ types.DictType ] = encodeDict
 g_dDecodeFunctions[ "d" ] = decodeDict
@@ -255,12 +269,12 @@ g_dDecodeFunctions[ "d" ] = decodeDict
 #Encode function
 def encode( uObject ):
   try:
-     #uObject = uObject + json.dumps(uObject)
+    #uObject = uObject + json.dumps(uObject)
     #eString = ""
     #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
-    #g_dEncodeFunctions[ type( uObject ) ]( uObject, eString )
+    return g_dEncodeFunctions[ type( uObject ) ]( uObject )
     #return "".join( eString )
-    return json.dumps(uObject)
+    #return json.dumps(uObject)
   except Exception:
     raise
 
@@ -269,23 +283,26 @@ def decode( data ):
     return data
   try:
     #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]
-    #return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )
-    return json.loads(data)
+    return g_dDecodeFunctions[ data[ 0 ] ]( data )
+    #return json.loads(data)
   except Exception:
     raise
 
 
 if __name__ == "__main__":
-  gObject = {2:"3", True : ( 3, None ), 2.0 * 10 ** 20 : 2.0 * 10 ** -10 }
-  print ">> Initial object: %s" % gObject
-  print ">> type: %s" % type(gObject)
-  print 'type of dict["True"]: %s' % type(gObject[True])
+  gObject = {"Character":'a', "String":"abc", "Unicode":u'1', "Integer":3, "Float":4.0, "Avogadro":6.02*10**23, "Tuple":(1,2,3), "List":[1,2,3]}
+  #gObject = {2:"3", True : ( 3, None ), 2.0 * 10 ** 20 : 2.0 * 10 ** -10 }
+  print "Initial gObject: %s" % gObject
+  print "Type of gObject: %s" % type(gObject)
+  for key in gObject:
+    print "Type of " + key + ": {}".format(type(gObject[key]))
   gData = encode( gObject )
-  print "\n>> Encoded data: %s" % gData
-  print ">> type of encoded data: %s" % type(gData)
+  print "Encoded data -> gData: %s" % gData
+  print "Type of gData: %s" % type(gData)
+  #for key in gData:
+    #print "Type of " + key + ": {}".format(type(gData[key]))
   gDecoded = decode( gData )
-  print "\n>> Decoded data: %s" % gDecoded
-  print ">> type of decoded data: %s" % type(gDecoded)
-  print 'type of dict[True]: %s' % type(gDecoded["True"])
-  print 'type of dict[2]: %s' % type(gDecoded['2'])
-  print 'type of dict[2.0 * 10 ** 20]: %s' % type(gDecoded['2e+20'])
+  print "Decoded data -> gDecoded: %s" % gDecoded
+  print "Type of gDecoded: %s" % type(gDecoded)
+  for key in gDecoded:
+      print "Type of " + key + ": {}".format(type(gDecoded[key]))
