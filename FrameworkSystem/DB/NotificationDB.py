@@ -337,7 +337,7 @@ class NotificationDB( DB ):
     if not result[ 'OK' ] or not result[ 'Value' ]:
       self.log.error( "Could not retrieve default notifications for alarm", "%s" % alarmId )
       return S_OK( alarmId )
-    notificationsDict = DEncode.decode( result[ 'Value' ][0][0] )[0]
+    notificationsDict = DEncode.decode( result[ 'Value' ][0][0] )
     for v in self.__validAlarmNotifications:
       if v not in notificationsDict:
         notificationsDict[ v ] = 0
@@ -527,7 +527,7 @@ class NotificationDB( DB ):
 
 ###
 # Followers management
-###    
+###
 
   def modifyFollowerForAlarm( self, alarmId, user, notificationsDict, overwrite = True ):
     rawUser = user
@@ -830,4 +830,3 @@ class NotificationDB( DB ):
       ids.append( str( msg[0] ) )
     self.log.info( "Deferred %s notifications" % len( ids ) )
     return self._update( "DELETE FROM `ntf_Notifications` WHERE Id in (%s)" % ",".join( ids ) )
-
