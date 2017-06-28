@@ -1,4 +1,8 @@
 # $HeadURL$
+
+###############################################################################
+#                           DEncode.py                                        #
+###############################################################################
 """
 Encoding and decoding for dirac, Ids:
  i -> int
@@ -14,10 +18,10 @@ Encoding and decoding for dirac, Ids:
 """
 __RCSID__ = "$Id$"
 
-import types
+import pdb
 import datetime
-
 import json
+import types
 
 _dateTimeObject = datetime.datetime.utcnow()
 _dateTimeType = type( _dateTimeObject )
@@ -27,282 +31,214 @@ _timeType = type( _dateTimeObject.time() )
 g_dEncodeFunctions = {}
 g_dDecodeFunctions = {}
 
+class newEncoder(json.JSONEncoder):
+    def encode(self, object):
+        def hintParticularTypes(item):
+            if isinstance(item, tuple):
+                return {'__tuple__': True, 'items': item}
+            elif isinstance(item, long):
+                return {'__long__': True, 'value': item}
+            elif isinstance(item, list):
+                return [hintParticularTypes(e) for e in item]
+            elif isinstance(item, dict):
+                newDict = {}
+                for key in item:
+                    newDict[key] = hintParticularTypes(item[key])
+                return newDict
+            else:
+                return item
+
+        return super(newEncoder, self).encode(hintParticularTypes(object))
+
+def hintedParticularTypes(object):
+    if '__tuple__' in object:
+        return tuple(object['items'])
+    elif '__long__' in object:
+        return long(object['value'])
+
+
+def genericEncoding( data ):
+    return json.dumps( data )
+
+g_dEncodeFunctions[ float ] = genericEncoding
+g_dEncodeFunctions[ bool ] = genericEncoding
+g_dEncodeFunctions[ types.NoneType ] = genericEncoding
+
+#def genericDecoding( data ):
+    #return json.loads( data )
+
 #Encoding and decoding ints
-def encodeInt( iValue ):
-  #eList.extend( ( "i", str( iValue ), "e" ) )
-  eDict = {"__type__": 'i', "__value__": json.dumps(iValue)}
-  return str(eDict)
+def encodeInt( intToSerialize ):
+    eDict = dict()
+    eDict['__type__'] = 'i'
+    eDict['__value__'] = intToSerialize
+    return json.dumps( eDict )
 
-def decodeInt( data ):
-  #i += 1
-#  end = data.index( 'e', i )
-#  value = int( data[i:end] )
-#  return ( value, end + 1 )
-  return int(json.loads(data)["__value__"])
+def decodeInt( dictionary ):
+    return int( dictionary['__value__'] )
 
-g_dEncodeFunctions[ types.IntType ] = encodeInt
+g_dEncodeFunctions[ int ] = encodeInt
 g_dDecodeFunctions[ "i" ] = decodeInt
 
 #Encoding and decoding longs
 def encodeLong( iValue ):
-  # corrected by KGG   eList.extend( ( "l", str( iValue ), "e" ) )
-  #eList.extend( ( "I", str( iValue ), "e" ) )
-  eDict = {"__type__": 'I', "__value__": json.dumps(iValue)}
-  return str(eDict)
+    eDict = dict()
+    eDict['__type__'] = 'I'
+    eDict['__value__'] = iValue
+    return json.dumps(eDict)
 
-def decodeLong( data ):
-#  i += 1
-#  end = data.index( 'e', i )
-#  value = long( data[i:end] )
-#  return ( value, end + 1 )
-  return long(json.loads(data)["__value__"])
+def decodeLong( iDict ):
+    return long( iDict['__value__'] )
 
-g_dEncodeFunctions[ types.LongType ] = encodeLong
+g_dEncodeFunctions[ long ] = encodeLong
 g_dDecodeFunctions[ "I" ] = decodeLong
-
-#Encoding and decoding floats
-def encodeFloat( iValue ):
-  #eList.extend( ( "f", str( iValue ), "e" ) )
-  eDict = {"__type__": 'f', "__value__": json.dumps(iValue)}
-  return str(eDict)
-
-def decodeFloat( data ):
-#  i += 1
-#  end = data.index( 'e', i )
-#  if end + 1 < len( data ) and data[end + 1] in ( '+', '-' ):
-#    eI = end
-#    end = data.index( 'e', end + 1 )
-#    value = float( data[i:eI] ) * 10 ** int( data[eI + 1:end] )
-#  else:
-#    value = float( data[i:end] )
-#  return ( value, end + 1 )
-  return float(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.FloatType ] = encodeFloat
-g_dDecodeFunctions[ "f" ] = decodeFloat
-
-#Encoding and decoding booleand
-def encodeBool( bValue ):
-#  if bValue:
-#    eList.append( "b1" )
-#  else:
-#    eList.append( "b0" )
-  eDict = {"__type__": 'b', "__value__": json.dumps(iValue)}
-  return str(eDict)
-
-def decodeBool( data ):
-  #if data[ i + 1 ] == "0":
-  #if data == "false":
-    #return ( False, i + 2 )
-    #return False
-  #else:
-    #return ( True, i + 2 )
-    #return True
-  return bool(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.BooleanType ] = encodeBool
-g_dDecodeFunctions[ "b" ] = decodeBool
 
 #Encoding and decoding strings
 def encodeString( sValue ):
-#  eList.extend( ( 's', str( len( sValue ) ), ':', sValue ) )
-  eDict = {"__type__": 's', "__value__": json.dumps(iValue)}
-  return str(eDict)
+    eDict = dict()
+    eDict['__type__'] = 's'
+    eDict['__value__'] = sValue
+    return json.dumps(eDict)
 
+def decodeString( iDict ):
+    return str( iDict['__value__'] )
 
-def decodeString( data ):
-  #i += 1
-  #colon = data.index( ":", i )
-  #value = int( data[ i : colon ] )
-  #colon += 1
-  #end = colon + value
-  #value = json.loads(data)
-  #return value.encode('utf-8', 'strict')
-  #return ( data[ colon : end] , end )
-  return str(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.StringType ] = encodeString
+g_dEncodeFunctions[ str ] = encodeString
 g_dDecodeFunctions[ "s" ] = decodeString
 
 #Encoding and decoding unicode strings
-def encodeUnicode( sValue ):
-  #valueStr = sValue.encode( 'utf-8' )
-  #eList.extend( ( 'u', str( len( valueStr ) ), ':', valueStr ) )
-  eDict = {"__type__": 'u', "__value__": json.dumps(iValue)}
-  return str(eDict)
+#def encodeUnicode( sValue ):
+    #eDict = dict()
+    #eDict['__type__'] = 'u'
+    #eDict['__value__'] = sValue
+    #return json.dumps(eDict)
 
+#def decodeUnicode( iDict ):
+    #return unicode( iDict['__value__'] )
 
-def decodeUnicode( data ):
-  #i += 1
-  #colon = data.index( ":", i )
-  #value = int( data[ i : colon ] )
-  #colon += 1
-  #end = colon + value
-  #return ( unicode( data[ colon : end], 'utf-8' ) , end )
-  #value = json.loads(data)
-  #return value.encode('utf-8', 'strict')
-  return unicode(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.UnicodeType ] = encodeUnicode
-g_dDecodeFunctions[ "u" ] = decodeUnicode
+g_dEncodeFunctions[ unicode ] = genericEncoding
+#g_dDecodeFunctions[ "u" ] = decodeUnicode
 
 #Encoding and decoding datetime
-def encodeDateTime( oValue, eList ):
-  if type( oValue ) == _dateTimeType:
-    tDateTime = ( oValue.year, oValue.month, oValue.day, \
-                      oValue.hour, oValue.minute, oValue.second, \
-                      oValue.microsecond, oValue.tzinfo )
-    eList.append( "za" )
-    # corrected by KGG encode( tDateTime, eList )
-    g_dEncodeFunctions[ type( tDateTime ) ]( tDateTime, eList )
-  elif type( oValue ) == _dateType:
-    tData = ( oValue.year, oValue.month, oValue. day )
-    eList.append( "zd" )
-    # corrected by KGG encode( tData, eList )
-    g_dEncodeFunctions[ type( tData ) ]( tData, eList )
-  elif type( oValue ) == _timeType:
-    tTime = ( oValue.hour, oValue.minute, oValue.second, oValue.microsecond, oValue.tzinfo )
-    eList.append( "zt" )
-    # corrected by KGG encode( tTime, eList )
-    g_dEncodeFunctions[ type( tTime ) ]( tTime, eList )
-  else:
-    raise Exception( "Unexpected type %s while encoding a datetime object" % str( type( oValue ) ) )
+def encodeDateTime( oValue ):
+    eDict = dict()
+    if type( oValue ) == _dateTimeType:
+        eDict['__value__'] = ( oValue.year, oValue.month, oValue.day,
+                               oValue.hour, oValue.minute, oValue.second,
+                               oValue.microsecond, oValue.tzinfo )
+        eDict['__type__'] = 'za'
+        return json.dumps(eDict)
+    elif type( oValue ) == _dateType:
+        eDict['__value__'] = ( oValue.year, oValue.month, oValue. day )
+        eDict['__type__'] = 'zd'
+        return json.dumps(eDict)
+    elif type( oValue ) == _timeType:
+        eDic['__value__'] = ( oValue.hour, oValue.minute, oValue.second,
+                              oValue.microsecond, oValue.tzinfo )
+        eDict['__type__'] = "zt"
+        return json.dumps(eDict)
+    else:
+        raise Exception( "Unexpected type %s while encoding a datetime object"
+                         % str( type( oValue ) ) )
 
-def decodeDateTime( data, i ):
-  i += 1
-  dataType = data[i]
-  # corrected by KGG tupleObject, i = decode( data, i + 1 )
-  tupleObject, i = g_dDecodeFunctions[ data[ i + 1 ] ]( data, i + 1 )
-  if dataType == 'a':
-    dtObject = datetime.datetime( *tupleObject )
-  elif dataType == 'd':
-    dtObject = datetime.date( *tupleObject )
-  elif dataType == 't':
-    dtObject = datetime.time( *tupleObject )
-  else:
-    raise Exception( "Unexpected type %s while decoding a datetime object" % dataType )
-  return ( dtObject, i )
+def decodeDateTime( eDict ):
+    if eDict['__type__'] == 'za':
+        dtObject = datetime.datetime( eDict['__value__'] )
+    elif eDict['__type__'] == 'zd':
+        dtObject = datetime.date( eDict['__value__'] )
+    elif eDict['__type__'] == 'zt':
+        dtObject = datetime.time( eDict['__value__'] )
+    else:
+        raise Exception( "Unexpected type %s while decoding a datetime object"
+                         % dataType )
+    return ( dtObject )
 
 g_dEncodeFunctions[ _dateTimeType ] = encodeDateTime
 g_dEncodeFunctions[ _dateType ] = encodeDateTime
 g_dEncodeFunctions[ _timeType ] = encodeDateTime
-g_dDecodeFunctions[ 'z' ] = decodeDateTime
-
-#Encoding and decoding None
-def encodeNone( oValue ):
-#  eList.append( "n" )
-  eDict = {"__type__": 'n', "__value__": json.dumps(iValue)}
-  return str(eDict)
-
-
-def decodeNone( data ):
-  #return ( None, i + 1 )
-  return None
-
-g_dEncodeFunctions[ types.NoneType ] = encodeNone
-g_dDecodeFunctions[ 'n' ] = decodeNone
+g_dDecodeFunctions[ 'za' ] = decodeDateTime
+g_dDecodeFunctions[ 'zd' ] = decodeDateTime
+g_dDecodeFunctions[ 'zt' ] = decodeDateTime
 
 #Encode and decode a list
-def encodeList( lValue ):
-#  eList.append( "l" )
-#  for uObject in lValue:
-#    g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )
-#  eList.append( "e" )
-  eDict = {"__type__": 'l', "__value__": json.dumps(iValue)}
-  return str(eDict)
+#def encodeList( listToSerialize ):
+    #serializedList = list()
+    #for element in listToSerialize:
+        #serializedElement = g_dEncodeFunctions[type( element )]( element )
+        #serializedList.append( serializedElement )
+    #eDict = dict()
+    #eDict['__type__'] = 'l'
+    #eDict['__value__'] = serializedList
+    #print eDict
+    #return json.dumps(eDict)
 
+#def decodeList( iDict ):
+    #deserializedList = list( iDict['__value__'] )
+    #for element in deserializedList:
+        #element = decode( element )
 
-def decodeList( data ):
-  #oL = []
-  #i += 1
-  #while data[ i ] != "e":
-    #ob, i = g_dDecodeFunctions[ data[ i ] ]( data, i )
-    #oL.append( ob )
-  #return( oL, i + 1 )
-  return list(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.ListType ] = encodeList
-g_dDecodeFunctions[ "l" ] = decodeList
+g_dEncodeFunctions[ list ] = genericEncoding
+#g_dDecodeFunctions[ "l" ] = decodeList
 
 #Encode and decode a tuple
 def encodeTuple( lValue ):
-#  eList.append( "t" )
-#  for uObject in lValue:
-#    g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )
-#  eList.append( "e" )
-  eDict = {"__type__": 't', "__value__": json.dumps(iValue)}
-  return str(eDict)
+    listFromTuple = list()
+    for element in lValue:
+        listFromTuple.append( g_dEncodeFunctions[type( element )]( element ) )
+    #for element in listFromTuple:
+        #element = encode( element )
+        #print( element )
+    #print serialisedTuple
+    eDict = dict()
+    eDict['__type__'] = 't'
+    eDict['__value__'] = listFromTuple
+    return json.dumps(eDict)
 
+def decodeTuple( iDict ):
+    firstlist = list( iDict['__value__'] )
+    for element in firstlist:
+        element = decode( element )
+    return tuple( firstlist )
 
-def decodeTuple( data ):
-  #oL, i = decodeList( data, i )
-  #return ( tuple( oL ), i )
-  return tuple(json.loads(data)["__value__"])
-
-g_dEncodeFunctions[ types.TupleType ] = encodeTuple
+g_dEncodeFunctions[ tuple ] = encodeTuple
 g_dDecodeFunctions[ "t" ] = decodeTuple
 
-#Encode and decode a dictionary
-def encodeDict( dValue ):
-#  eList.append( "d" )
-#  for key in sorted( dValue ):
-#    g_dEncodeFunctions[ type( key ) ]( key, eList )
-#    g_dEncodeFunctions[ type( dValue[key] ) ]( dValue[key], eList )
-#  eList.append( "e" )
-  eDict = {"__type__": 'd', "__value__": json.dumps(iValue)}
-  return str(eDict)
-
+def encodeDict( data ):
+    for key in data:
+        data[key] = encode( data[key] )
+    return json.dumps( data )
 
 def decodeDict( data ):
-  #oD = {}
-  #i += 1
-  #while data[ i ] != "e":
-    #k, i = g_dDecodeFunctions[ data[ i ] ]( data, i )
-    #oD[ k ], i = g_dDecodeFunctions[ data[ i ] ]( data, i )
-  #return ( oD, i + 1 )
-  return dict(json.loads(data)["__value__"])
+    for key in data:
+        data[key] = decode( data[key] )
+    return data
 
-g_dEncodeFunctions[ types.DictType ] = encodeDict
+g_dEncodeFunctions[ dict ] = encodeDict
 g_dDecodeFunctions[ "d" ] = decodeDict
 
-
 #Encode function
-def encode( uObject ):
-  try:
-    #uObject = uObject + json.dumps(uObject)
-    #eString = ""
-    #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
-    return g_dEncodeFunctions[ type( uObject ) ]( uObject )
-    #return "".join( eString )
-    #return json.dumps(uObject)
-  except Exception:
-    raise
+def encode( data ):
+    return g_dEncodeFunctions[ type( data ) ]( data )
 
-def decode( data ):
-  if not data:
-    return data
-  try:
-    #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]
-    return g_dDecodeFunctions[ data[ 0 ] ]( data )
-    #return json.loads(data)
-  except Exception:
-    raise
-
+def decode( encodedString ):
+    deserializedData = json.loads( encodedString )
+    try:
+        deserializedDataType = deserializedData['__type__']
+    except TypeError:
+        return deserializedData
+    except KeyError:
+        deserializedData = decodeDict( deserializedData )
+    else:
+        deserializedData = g_dDecodeFunctions[ deserializedDataType ]( deserializedData )
+        return deserializedData
 
 if __name__ == "__main__":
-  gObject = {"Character":'a', "String":"abc", "Unicode":u'1', "Integer":3, "Float":4.0, "Avogadro":6.02*10**23, "Tuple":(1,2,3), "List":[1,2,3]}
-  #gObject = {2:"3", True : ( 3, None ), 2.0 * 10 ** 20 : 2.0 * 10 ** -10 }
-  print "Initial gObject: %s" % gObject
-  print "Type of gObject: %s" % type(gObject)
-  for key in gObject:
-    print "Type of " + key + ": {}".format(type(gObject[key]))
-  gData = encode( gObject )
-  print "Encoded data -> gData: %s" % gData
-  print "Type of gData: %s" % type(gData)
-  #for key in gData:
-    #print "Type of " + key + ": {}".format(type(gData[key]))
-  gDecoded = decode( gData )
-  print "Decoded data -> gDecoded: %s" % gDecoded
-  print "Type of gDecoded: %s" % type(gDecoded)
-  for key in gDecoded:
-      print "Type of " + key + ": {}".format(type(gDecoded[key]))
+    myTuple = ('t1', ('tt1','tt2'), ['l1','l2'])
+    #pdb.set_trace()
+    print decode(encode(myTuple)) == myTuple
+    #gObject = {2:"3", True : ( 3, None ), 2.0 * 10 ** 20 : 2.0 * 10 ** -10 }
+    #print "Initial: %s" % gObject
+    #pdb.set_trace()
+    #gData = encode( gObject )
+    #print "Encoded: %s" % gData
+    #print "Decoded: %s" % decode( gData )
