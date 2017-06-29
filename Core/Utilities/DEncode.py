@@ -218,19 +218,23 @@ g_dDecodeFunctions[ "d" ] = decodeDict
 
 #Encode function
 def encode( data ):
-    return g_dEncodeFunctions[ type( data ) ]( data )
+    #return g_dEncodeFunctions[ type( data ) ]( data )
+    coding = newEncoder()
+    serializedString = coding.encode( data )
+    return serializedString
 
 def decode( encodedString ):
-    deserializedData = json.loads( encodedString )
-    try:
-        deserializedDataType = deserializedData['__type__']
-    except TypeError:
-        return deserializedData
-    except KeyError:
-        deserializedData = decodeDict( deserializedData )
-    else:
-        deserializedData = g_dDecodeFunctions[ deserializedDataType ]( deserializedData )
-        return deserializedData
+    #deserializedData = json.loads( encodedString )
+    #try:
+        #deserializedDataType = deserializedData['__type__']
+    #except TypeError:
+        #return deserializedData
+    #except KeyError:
+        #deserializedData = decodeDict( deserializedData )
+    #else:
+        #deserializedData = g_dDecodeFunctions[ deserializedDataType ]( deserializedData )
+        #return deserializedData
+    return json.loads( encodedString, object_hook =  hintedParticularTypes)
 
 if __name__ == "__main__":
     myTuple = ('t1', ('tt1','tt2'), ['l1','l2'])
