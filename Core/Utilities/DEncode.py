@@ -1,13 +1,27 @@
 # $HeadURL$
 
 ###############################################################################
-#                           DEncode2.py                                       #
+#                            DEncode.py                                       #
 ###############################################################################
 __RCSID__ = "$Id$"
 
 import json
+import datetime
+
+#data types used for date and time encoding
+_dateTimeObject = datetime.datetime.utcnow()
+_dateTimeType = type( _dateTimeObject )
+_dateType = type( _dateTimeObject.date() )
+_timeType = type( _dateTimeObject.time() )
 
 def hintParticularTypes( item ):
+    """This function detects tuples and longs and replaces them with dictionaries.
+    This allows us to prserve these data types. By default, 'json.dumps()' encodes
+    tuples into arrays, (like python lists) and longs into int numbers
+    (like python ints). By using directly 'json.loads()', without
+    'DEncode.hintParticularTypes()', arrays are decoded into lists (so we
+    lose our tuples) and int numbers into ints (then we also lose long ints)."""
+
     if isinstance( item, tuple ):
         L = []
         for i in item:
@@ -23,15 +37,61 @@ def hintParticularTypes( item ):
         for key in item:
             newDict[key] = hintParticularTypes( item[key] )
         return newDict
+    elif isinstance( item, _dateTimeType ):
+        dateTimeTuple = ( item.year, item.month, item.day, item.hour,
+                          item.minute, item.second,
+                          item.microsecond, item.tzinfo )
+        return {'__dateTime__':True, 'items':dateTimeTuple}
+    elif isinstance(item, _dateType):
+        dateTuple = ( item.year, item.month, item. day )
+        return {"__date__":True, 'items':dateTuple}
+    elif isinstance(item, _timeType):
+        timeTuple = ( item.hour, item.minute, item.second, item.microsecond, item.tzinfo )
+        return {"__time__":True, 'items':timeTuple}
     else:
         return item
 
-def hintedParticularTypes( object ):
-    if '__tuple__' in object:
-        newTuple = hintedParticularTypes( object['items'] )
-        return tuple( newTuple )
-    elif '__long__' in object:
-        return long( object['value'] )
+def DetectHintedParticularTypes( object ):
+    """This function detecs dictionaries encoding tuples and longs and replaces
+    them with the correct data structures. """
+    newTuple = tuple()
+    if isinstance(object, list):
+        return [DetectHintedParticularTypes(e) for e in object]
+    elif isinstance( object, dict ):
+        if '__tuple__' in object:
+            newTuple = DetectHintedParticularTypes( object['items'] )
+            return tuple(newTuple)
+        elif '__long__' in object:
+            return long( object['value'] )
+        elif '__dateTime__' in object:
+            L = list()
+            for i in object['items']:
+                L.append(i)
+            newTuple = tuple(L)
+            return datetime.datetime(*newTuple)
+        elif '__date__' in object:
+            L = list()
+            for i in object['items']:
+                L.append(i)
+            newTuple = tuple(L)
+            return datetime.date(*newTuple)
+        elif '__time__' in object:
+            L = list()
+            for i in object['items']:
+                L.append(i)
+            newTuple = tuple(L)
+            return datetime.time(*newTuple)
+        else:
+            newDict = {}
+            for key in object:
+                newDict[key] = DetectHintedParticularTypes( object[key] )
+            return newDict
+    elif isinstance(object, tuple):
+        L = list()
+        for i in object:
+            L.append( DetectHintedParticularTypes( i ) )
+        newTuple = tuple( L )
+        return newTuple
     else:
         return object
 
@@ -45,7 +105,18 @@ def encode( data ):
     return serializedString
 
 def decode( encodedString ):
-    return json.loads( encodedString, object_hook =  hintedParticularTypes )
+    return json.loads( encodedString, object_hook =  DetectHintedParticularTypes )
 
-if __name__ == "__main__":
-    pass
+#if __name__ == "__main__":
+    #test_tuple = (1,2,3)
+    #dict_tuple = {'__tuple__': True, 'items': test_tuple}
+    #test_long = long(6)
+    #dict_long = {'__long__': True, 'value': test_long}
+    #test_list = [test_tuple, test_long]
+    #test_dict = {'t':test_tuple, 'l':test_long}
+
+    #print "test_dict = {}".format(test_dict)
+    #d = encode(test_dict)
+    #print "encoded dict = {}".format(d)
+    #D = decode(d)
+    #print "decoded dict = {}".format(D)
