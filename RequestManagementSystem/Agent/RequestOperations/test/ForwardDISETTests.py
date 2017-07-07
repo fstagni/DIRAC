@@ -47,7 +47,7 @@ class ForwardDISETTests( unittest.TestCase ):
                       ( 12345, { "Hi": "There!" } ) )
     self.req = Request( { "RequestName": "testRequest" } )
     self.op = Operation( { "Type": "ForwardDISET",
-                           "Arguments": DEncode.encode( self.hiArgs ) } )
+                           "Arguments": DEncode.encode( self.hiArgs, "JSON" ) } )
     self.req += self.op
 
   def tearDown( self ):

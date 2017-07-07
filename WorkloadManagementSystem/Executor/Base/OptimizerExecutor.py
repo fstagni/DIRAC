@@ -132,7 +132,7 @@ class OptimizerExecutor( ExecutorModule ):
   def storeOptimizerParam( self, name, value ):
     if not self.__jobData.jobState:
       return S_ERROR( "This function can only be called inside the optimizeJob function" )
-    valenc = DEncode.encode( value )
+    valenc = DEncode.encode( value, "JSON" )
     return self.__jobData.jobState.setOptParameter( name, valenc )
 
   def retrieveOptimizerParam( self, name ):
@@ -143,7 +143,7 @@ class OptimizerExecutor( ExecutorModule ):
       return result
     valenc = result[ 'Value' ]
     try:
-      value = DEncode.decode( valenc )
+      value = DEncode.decode( valenc, "JSON" )
       #if encLength == len( valenc ):
       return S_OK( value )
     except Exception:

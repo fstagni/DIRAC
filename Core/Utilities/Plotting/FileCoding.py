@@ -17,22 +17,22 @@ def codeRequestInFileId( plotRequest, compressIfPossible = True ):
   compress = compressIfPossible and gZCompressionEnabled
   thbStub = False
   if compress:
-    plotStub = "Z:%s" % base64.urlsafe_b64encode( zlib.compress( DEncode.encode( plotRequest ), 9 ) )
+    plotStub = "Z:%s" % base64.urlsafe_b64encode( zlib.compress( DEncode.encode( plotRequest, "JSON" ), 9 ) )
   elif not gForceRawEncoding:
-    plotStub = "S:%s" % base64.urlsafe_b64encode( DEncode.encode( plotRequest ) )
+    plotStub = "S:%s" % base64.urlsafe_b64encode( DEncode.encode( plotRequest, "JSON" ) )
   else:
-    plotStub = "R:%s" % DEncode.encode( plotRequest )
+    plotStub = "R:%s" % DEncode.encode( plotRequest, "JSON" )
   #If thumbnail requested, use plot as thumbnail, and generate stub for plot without one
   extraArgs = plotRequest[ 'extraArgs' ]
   if 'thumbnail' in extraArgs and extraArgs[ 'thumbnail' ]:
     thbStub = plotStub
     extraArgs[ 'thumbnail' ] = False
     if compress:
-      plotStub = "Z:%s" % base64.urlsafe_b64encode( zlib.compress( DEncode.encode( plotRequest ), 9 ) )
+      plotStub = "Z:%s" % base64.urlsafe_b64encode( zlib.compress( DEncode.encode( plotRequest, "JSON" ), 9 ) )
     elif not gForceRawEncoding:
-      plotStub = "S:%s" % base64.urlsafe_b64encode( DEncode.encode( plotRequest ) )
+      plotStub = "S:%s" % base64.urlsafe_b64encode( DEncode.encode( plotRequest, "JSON" ) )
     else:
-      plotStub = "R:%s" % DEncode.encode( plotRequest )
+      plotStub = "R:%s" % DEncode.encode( plotRequest, "JSON" )
   return S_OK( { 'plot' : plotStub, 'thumbnail' : thbStub } )
 
 def extractRequestFromFileId( fileId ):
@@ -63,7 +63,7 @@ def extractRequestFromFileId( fileId ):
   else:
     gLogger.error( "Oops! Stub type is unknown", compressType )
     return S_ERROR( "Oops! Stub type '%s' is unknown :P" % compressType )
-  plotRequest = DEncode.decode( stub )
+  plotRequest = DEncode.decode( stub, "JSON" )
   #if len( stub ) != stubLength:
     #gLogger.error( "Oops! The stub is longer than the data :P" )
     #return S_ERROR( "Oops! The stub is longer than the data :P" )

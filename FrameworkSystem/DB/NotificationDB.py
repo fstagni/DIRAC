@@ -141,7 +141,7 @@ class NotificationDB( DB ):
             notifications[ nType ] = 1
           else:
             notifications[ nType ] = 0
-        val = DEncode.encode( notifications )
+        val = DEncode.encode( notifications, "JSON" )
       else:
         val = alarmDef[ field ]
       #Add to the list of fields to add
@@ -240,7 +240,7 @@ class NotificationDB( DB ):
       if not result[ 'OK' ]:
         return result
       updateFields.append( "%s=%s" % ( field, result[ 'Value' ] ) )
-    return S_OK( ( ", ".join( updateFields ), DEncode.encode( modifications ), followers ) )
+    return S_OK( ( ", ".join( updateFields ), DEncode.encode( modifications, "JSON" ), followers ) )
 
   def __getAlarmIdFromKey( self, alarmKey ):
     result = self._escapeString( alarmKey )
@@ -337,7 +337,7 @@ class NotificationDB( DB ):
     if not result[ 'OK' ] or not result[ 'Value' ]:
       self.log.error( "Could not retrieve default notifications for alarm", "%s" % alarmId )
       return S_OK( alarmId )
-    notificationsDict = DEncode.decode( result[ 'Value' ][0][0] )
+    notificationsDict = DEncode.decode( result[ 'Value' ][0][0], "JSON" )
     for v in self.__validAlarmNotifications:
       if v not in notificationsDict:
         notificationsDict[ v ] = 0
@@ -517,7 +517,7 @@ class NotificationDB( DB ):
       if not row[3]:
         decodedRows.append( list( row ) )
         continue
-      dec = DEncode.decode( row[ 3 ] )
+      dec = DEncode.decode( row[ 3 ], "JSON" )
       decodedRows[-1][3] = dec[0]
 
     resultDict = {}

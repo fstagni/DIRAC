@@ -47,14 +47,14 @@ class UserProfileClient:
 
   def storeVar( self, varName, data, perms = {} ):
     try:
-      stub = DEncode.encode( data )
+      stub = DEncode.encode( data, "JSON" )
     except Exception as e:
       return S_ERROR( "Cannot encode data:%s" % str( e ) )
     return self.__getRPCClient().storeProfileVar( self.profile, varName, stub, perms )
 
   def __decodeVar( self, data, dataTypeRE ):
     try:
-      dataObj = DEncode.decode( data )
+      dataObj = DEncode.decode( data, "JSON" )
     except Exception as e:
       return S_ERROR( "Cannot decode data: %s" % str( e ) )
     if dataTypeRE:
@@ -86,7 +86,7 @@ class UserProfileClient:
       encodedData = result[ 'Value' ]
       dataObj = {}
       for k in encodedData:
-        v = DEncode.decode( encodedData[k] )
+        v = DEncode.decode( encodedData[k], "JSON" )
         dataObj[ k ] = v
     except Exception as e:
       return S_ERROR( "Cannot decode data: %s" % str( e ) )
