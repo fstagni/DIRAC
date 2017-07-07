@@ -561,7 +561,7 @@ class JobWrapper( object ):
     optReplicas = {}
     if self.optArgs:
       try:
-        optDict = DEncode.decode( self.optArgs['InputData'] )
+        optDict = DEncode.decode( self.optArgs['InputData'], "JSON" )
         optReplicas = optDict['Value']
         self.log.info( 'Found optimizer catalog result' )
         self.log.verbose( optReplicas )
@@ -1218,7 +1218,7 @@ class JobWrapper( object ):
           self.log.verbose( "Adding accounting report to failover request object" )
           forwardDISETOp = Operation()
           forwardDISETOp.Type = "ForwardDISET"
-          forwardDISETOp.Arguments = DEncode.encode( result['rpcStub'] )
+          forwardDISETOp.Arguments = DEncode.encode( result['rpcStub'], "JSON" )
           request.addOperation( forwardDISETOp )
           self.log.verbose( "Added accounting report to failover request object" )
         else:

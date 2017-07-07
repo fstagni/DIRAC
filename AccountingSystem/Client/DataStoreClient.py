@@ -155,7 +155,7 @@ def _sendToFailover( rpcStub ):
     request.RequestName = "Accounting.DataStore.%s.%s" % ( time.time(), random.random() )
     forwardDISETOp = Operation()
     forwardDISETOp.Type = "ForwardDISET"
-    forwardDISETOp.Arguments = DEncode.encode( rpcStub )
+    forwardDISETOp.Arguments = DEncode.encode( rpcStub, "JSON" )
     request.addOperation( forwardDISETOp )
 
     return ReqClient().putRequest( request )

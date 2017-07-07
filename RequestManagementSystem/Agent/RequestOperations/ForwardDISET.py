@@ -52,7 +52,7 @@ class ForwardDISET( OperationHandlerBase ):
     """ execute RPC stub """
     # # decode arguments
     try:
-      decode = DEncode.decode( self.operation.Arguments )
+      decode = DEncode.decode( self.operation.Arguments, "JSON" )
       self.log.debug( "decoded val=%s" %  decode )
     except ValueError, error:
       self.log.exception( error )

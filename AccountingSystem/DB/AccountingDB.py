@@ -155,7 +155,7 @@ class AccountingDB( DB ):
       typeName = typesEntry[0]
       keyFields = List.fromChar( typesEntry[1], "," )
       valueFields = List.fromChar( typesEntry[2], "," )
-      bucketsLength = DEncode.decode( typesEntry[3] )
+      bucketsLength = DEncode.decode( typesEntry[3], "JSON" )
       self.__addToCatalog( typeName, keyFields, valueFields, bucketsLength )
 
   def getWaitingRecordsLifeTime( self ):
@@ -265,7 +265,7 @@ class AccountingDB( DB ):
       if not typeName in self.dbCatalog:
         return S_ERROR( "%s is not a valid type name" % typeName )
       bucketsLength.sort()
-      bucketsEncoding = DEncode.encode( bucketsLength )
+      bucketsEncoding = DEncode.encode( bucketsLength, "JSON" )
       retVal = self._update(
           "UPDATE `%s` set bucketsLength = '%s' where name = '%s'" % (
               self.catalogTableName,
@@ -389,7 +389,7 @@ class AccountingDB( DB ):
         return S_ERROR( "Can't create type %s: %s" % ( name, retVal[ 'Message' ] ) )
     if updateDBCatalog:
       bucketsLength.sort()
-      bucketsEncoding = DEncode.encode( bucketsLength )
+      bucketsEncoding = DEncode.encode( bucketsLength, "JSON" )
       self.insertFields( self.catalogTableName,
                          [ 'name', 'keyFields', 'valueFields', 'bucketsLength' ],
                          [ name, ",".join( keyFieldsList ), ",".join( valueFieldsList ), bucketsEncoding ] )
@@ -409,7 +409,7 @@ class AccountingDB( DB ):
       typesList.append( [ typeInfo[0],
                           List.fromChar( typeInfo[1] ),
                           List.fromChar( typeInfo[2] ),
-                          DEncode.decode( typeInfo[3] )
+                          DEncode.decode( typeInfo[3], "JSON" )
                         ]
                       )
     return S_OK( typesList )
