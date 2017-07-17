@@ -117,7 +117,7 @@ class BaseTransport( object ):
 
   def sendData( self, uData, prefix = False ):
     self.__updateLastActionTimestamp()
-    sCodedData = DEncode.encode( uData, "JSON" )
+    sCodedData = DEncode.encode( uData )
     if prefix:
       dataToSend = "%s%s:%s" % ( prefix, len( sCodedData ), sCodedData )
     else:
@@ -209,7 +209,7 @@ class BaseTransport( object ):
           data = pkgMem.read( pkgSize )
           self.byteStream = pkgMem.read()
       try:
-        data = DEncode.decode( data, "JSON" )
+        data = DEncode.decode( data )
       except Exception as e:
         return S_ERROR( "Could not decode received data: %s" % str( e ) )
       if idleReceive:

@@ -110,11 +110,11 @@ class CachedJobState( object ):
     else:
       manifest = None
     return DEncode.encode( ( self.__jid, self.__cache, self.__jobLog, manifest,
-                             self.__initState, self.__insertIntoTQ, tuple( self.__dirtyKeys ) ), "JSON" )
+                             self.__initState, self.__insertIntoTQ, tuple( self.__dirtyKeys ) ) )
 
   @staticmethod
   def deserialize( stub ):
-    dataTuple = DEncode.decode( stub, "JSON" )
+    dataTuple = DEncode.decode( stub )
     if len( dataTuple ) != 7:
       return S_ERROR( "Invalid stub" )
     #jid

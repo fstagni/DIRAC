@@ -325,18 +325,19 @@ class newEncoder(json.JSONEncoder):
 # 'encode()' and 'decode()' functions must be called with the "protocol"        #
 # argument set to "JSON".                                                       #
 #################################################################################
-def encode( uObject, protocol = "DEncode" ):
+def encode( uObject ):
 
-    if protocol == "JSON":
+    try:
         ########################################################################
         #                            We can use JSON                           #
         ########################################################################
         coding = newEncoder()                                                  #
         serializedString = coding.encode( uObject )                            #
+        print "MARSHALLING IN JSON"
         return serializedString                                                #
         ########################################################################
 
-    else:
+    except:
         ########################################################################
         #                      or we can stay with DEncode                     #
         ########################################################################
@@ -344,21 +345,23 @@ def encode( uObject, protocol = "DEncode" ):
             eList = []                                                         #
             #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
             g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            #
+            print "MARSHALLING IN DEncode"
             return "".join( eList )                                            #
         except Exception:                                                      #
             raise                                                              #
         ########################################################################
 
-def decode( data, protocol = "DEncode" ):
+def decode( data ):
 
-    if protocol == "JSON":
+    try:
         ########################################################################
         #                            We can use JSON                           #
         ########################################################################
+        print "UNMARSHALLING IN JSON"
         return json.loads( data, object_hook =  DetectHintedParticularTypes )  #
         ########################################################################
 
-    else:
+    except:
         ########################################################################
         #                      or we can stay with DEncode                     #
         ########################################################################
@@ -366,6 +369,7 @@ def decode( data, protocol = "DEncode" ):
             return data                                                        #
         try:                                                                   #
             #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]
+            print "UNMARSHALLING IN DEncode"
             return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )                  #
         except Exception:                                                      #
             raise                                                              #

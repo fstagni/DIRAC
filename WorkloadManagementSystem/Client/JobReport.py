@@ -197,7 +197,7 @@ class JobReport( object ):
 
         forwardDISETOp = Operation()
         forwardDISETOp.Type = "ForwardDISET"
-        forwardDISETOp.Arguments = DEncode.encode( rpcStub, "JSON" )
+        forwardDISETOp.Arguments = DEncode.encode( rpcStub )
 
       else:
         return S_ERROR( 'Could not create ForwardDISET operation' )
