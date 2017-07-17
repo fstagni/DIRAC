@@ -69,7 +69,7 @@ class ServiceInterface( object ):
                                                      'definition': {},
                                                      'stacked': True,
                                                      'groupBy': ['activities.description'],
-                                                     'label': '$SITE'}, "JSON" ),
+                                                     'label': '$SITE'} ),
                                    ['sources.componentName'] )
 
   def __checkSourceDict( self, sourceDict ):
@@ -266,7 +266,7 @@ class ServiceInterface( object ):
     else:
       viewDescription[ 'variable' ] = []
     acCatalog = self.__createCatalog()
-    return acCatalog.registerView( viewName, DEncode.encode( viewDescription, "JSON" ), viewDescription[ 'variable' ] )
+    return acCatalog.registerView( viewName, DEncode.encode( viewDescription ), viewDescription[ 'variable' ] )
 
   def getViews( self, onlyStatic = True ):
     """
@@ -283,7 +283,7 @@ class ServiceInterface( object ):
     if len( views ) == 0:
       return S_ERROR( "View does not exist" )
     viewData = views[0]
-    viewDefinition = DEncode.decode( str( viewData[ 0 ] ), "JSON" )
+    viewDefinition = DEncode.decode( str( viewData[ 0 ] ) )
     neededVarFields = List.fromChar( viewData[1], "," )
     if len( neededVarFields ) > 0:
       if not 'varData' in viewRequest:

@@ -70,6 +70,6 @@ class FileReport( object ):
       # Generate Request
       commitOp = Operation()
       commitOp.Type = 'SetFileStatus'
-      commitOp.Arguments = DEncode.encode( {'transformation':self.transformation, 'statusDict':self.statusDict, 'force':self.force}, "JSON" )
+      commitOp.Arguments = DEncode.encode( {'transformation':self.transformation, 'statusDict':self.statusDict, 'force':self.force} )
 
     return S_OK( commitOp )

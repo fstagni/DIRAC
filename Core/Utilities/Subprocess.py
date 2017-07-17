@@ -203,14 +203,14 @@ class Subprocess:
     from DIRAC.Core.Utilities import DEncode
 
     try:
-      os.write( writePipe, DEncode.encode( S_OK( function( *stArgs, **stKeyArgs ) ), "JSON" ) )
+      os.write( writePipe, DEncode.encode( S_OK( function( *stArgs, **stKeyArgs ) ) ) )
     except OSError, x:
       if str( x ) == '[Errno 32] Broken pipe':
         # the parent has died
         pass
     except Exception as x:
       self.log.exception( 'Exception while executing', function.__name__ )
-      os.write( writePipe, DEncode.encode( S_ERROR( str( x ) ), "JSON" ) )
+      os.write( writePipe, DEncode.encode( S_ERROR( str( x ) ) ) )
       #HACK: Allow some time to flush logs
       time.sleep( 1 )
     try:
@@ -333,7 +333,7 @@ class Subprocess:
             dataStub = retDict[ 'Value' ]
             if not dataStub:
               return S_ERROR( "Error decoding data coming from call" )
-            retObj = DEncode.decode( dataStub, "JSON" )
+            retObj = DEncode.decode( dataStub )
             #if stubLen == len( dataStub ):
             return retObj
             #else:
