@@ -322,89 +322,59 @@ class newEncoder(json.JSONEncoder):
 #################################################################################
 #################################################################################
 def encode( uObject ):
+    """This function turns the uObject data into serialized data. The final
+    serialized string is the concatenation of:
+    - the serialized data written in DEncode format 
+    - a separartion string, which is 'JSON'
+    - the serialized data written in JSON format
+    The serialized data is written twice in one message. Once in DEncode and 
+    once in JSON.
+        If the machine receiving the data only understands DEncode, then it will
+    detect and read only the DEncode part of the message. The rest will be 
+    ignored.
+        If the machine receiving the data is updated with this DEncode file,
+    then it will split the message and read the JSON part. The DEncode part 
+    will be ignored."""
+    try:                                                                   
 
-    #try:
-        ########################################################################
-        #                            We can use JSON                           #
-        ########################################################################
-        #coding = newEncoder()                                                  #
-        #serializedString = coding.encode( uObject )                            #
-        #print "MARSHALLING IN JSON"
-        #return serializedString                                                #
-        ########################################################################
-
-    #except:
-        ########################################################################
-        #                      or we can stay with DEncode                     #
-        ########################################################################
-    try:                                                                   #
-        DEncodeString = ""                                                 #
-        eList = []                                                         #
+         #Creating the DEncode part of the serialized data                  
+        DEncodeString = ""                                                 
+        eList = []                                                         
         #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
-        g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            #
-        DEncodeString = "".join( eList )                                   #
-        print "DEncode STRING CREATED"                                     #
-                                                                           #
-        coding = newEncoder()                                              #
-        jsonString = coding.encode( uObject )                              #
-        print "JSON STRING CREATED"                                        #
-                                                                           #
-        serializedString = DEncodeString + "JSON" + jsonString             #
-        print "DEncode and JSON ASSEMBLED"                                 #
-        return serializedString                                            #
-    except Exception:                                                      #
-        raise                                                              #
-    ########################################################################
+        g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            
+        DEncodeString = "".join( eList )                                   
+        print "DEncode STRING CREATED"                                     
+        
+         #Creating the JSON part of the serialized data
+        coding = newEncoder()                                              
+        jsonString = coding.encode( uObject )                              
+        print "JSON STRING CREATED"
+
+         #Assembling the serialized string and sending it
+        serializedString = DEncodeString + "JSON" + jsonString             
+        print "DEncode and JSON ASSEMBLED AND SENT"                                 
+        return serializedString                                            
+    except Exception:                                                      
+        raise                                                              
 
 def decode( data ):
-
-    #try:
-        ########################################################################
-        #                            We can use JSON                           #
-        ########################################################################
-        #print "UNMARSHALLING IN JSON"
-        #return json.loads( data, object_hook =  DetectHintedParticularTypes )  #
-        ########################################################################
-
-    #except:
-        ############################################################################
-        #                      or we can stay with DEncode                         #
-        ############################################################################
-    if not data:                                                                   #
-        return data                                                                #
-    try:                                                                           #
-        #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]   #
-        splitList = string.split(data, "JSON")                                     #
-        try:                                                                       #
-            ifJson = splitList[1]                                                  #
-            print "UNMARSHALLING JSON DATA"                                        #
-            return json.loads( ifJson, object_hook =  DetectHintedParticularTypes )#
-        except:                                                                    #
-            print "UNMARSHALLING DEncode DATA"                                     #
-            return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )                      #
-    except Exception:                                                              #
-        raise                                                                      #
-    ################################################################################
-
-#if __name__ == "__main__":
-    #test_tuple = (1,2,3)
-    #dict_tuple = {'__tuple__': True, 'items': test_tuple}
-    #test_long = long(6)
-    #dict_long = {'__long__': True, 'value': test_long}
-    #test_list = [test_tuple, test_long]
-    #test_dict = {'t':test_tuple, 'l':test_long}
-
-    #print "test_dict = {}".format(test_dict)
-    #d = encode(test_dict)
-    #print "encoded dict = {}".format(d)
-    #L = string.split(d, "JSON")
-    #DEncodePart = L[0]
-    #print "DEncodePart = {}".format(DEncodePart)
-    #JSONPart = L[1]
-    #print "JSONPart = {}".format(JSONPart)
-    #D1 = decode(d)
-    #print "decoded dict = {}".format(D1)
-    #D2 = decode(DEncodePart)
-    #print "decoded DEncode = {}".format(D2)
-    #D3 = decode(JSONPart)
-    #print "decoded JSON = {}".format(D3)
+    """This function turns a serialized string into a data structure.
+    If the incomming message contains some data written in JSON, then
+    this function will read the JSON part and unmarshall it. If there
+    is no JSON in the message, then this function will unmarshall the
+    incomming message using DEncode protocol."""
+    if not data:
+        return data
+    try:
+         #Trying to split the message into a DEncode string and a JSON string
+        splitList = string.split(data, "JSON")
+        try:
+             #if there is some JSON in the message, then we use JSON to unmarshall it
+            ifJson = splitList[1] print "UNMARSHALLING JSON DATA"
+            return json.loads( ifJson, object_hook =  DetectHintedParticularTypes )
+        except:
+             #If ther is no JSON in the message, we use DEncode to unmarshall it
+            print "UNMARSHALLING DEncode DATA"
+            return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )
+    except Exception:
+        raise
