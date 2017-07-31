@@ -22,6 +22,7 @@ __RCSID__ = "$Id$"
 import json
 import types
 import datetime
+import string
 
 #data types used for date and time encoding
 _dateTimeObject = datetime.datetime.utcnow()
@@ -319,61 +320,71 @@ class newEncoder(json.JSONEncoder):
         return super( newEncoder, self ).encode( hintParticularTypes( object ) )
 
 #################################################################################
-# The choice between DEncode and JSON is made by the "protocol" argument passed #
-# to the 'encode()' and 'decode()' functions. This argument is set to "DEncode" #
-# by default. If the (un)marshalling must be performed in JSON, then the        #
-# 'encode()' and 'decode()' functions must be called with the "protocol"        #
-# argument set to "JSON".                                                       #
 #################################################################################
 def encode( uObject ):
 
-    try:
+    #try:
         ########################################################################
         #                            We can use JSON                           #
         ########################################################################
-        coding = newEncoder()                                                  #
-        serializedString = coding.encode( uObject )                            #
-        print "MARSHALLING IN JSON"
-        return serializedString                                                #
+        #coding = newEncoder()                                                  #
+        #serializedString = coding.encode( uObject )                            #
+        #print "MARSHALLING IN JSON"
+        #return serializedString                                                #
         ########################################################################
 
-    except:
+    #except:
         ########################################################################
         #                      or we can stay with DEncode                     #
         ########################################################################
-        try:                                                                   #
-            eList = []                                                         #
-            #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
-            g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            #
-            print "MARSHALLING IN DEncode"
-            return "".join( eList )                                            #
-        except Exception:                                                      #
-            raise                                                              #
-        ########################################################################
+    try:                                                                   #
+        DEncodeString = ""                                                 #
+        eList = []                                                         #
+        #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
+        g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            #
+        DEncodeString = "".join( eList )                                   #
+        print "DEncode STRING CREATED"                                     #
+                                                                           #
+        coding = newEncoder()                                              #
+        jsonString = coding.encode( uObject )                              #
+        print "JSON STRING CREATED"                                        #
+                                                                           #
+        serializedString = DEncodeString + "JSON" + jsonString             #
+        print "DEncode and JSON ASSEMBLED"                                 #
+        return serializedString                                            #
+    except Exception:                                                      #
+        raise                                                              #
+    ########################################################################
 
 def decode( data ):
 
-    try:
+    #try:
         ########################################################################
         #                            We can use JSON                           #
         ########################################################################
-        print "UNMARSHALLING IN JSON"
-        return json.loads( data, object_hook =  DetectHintedParticularTypes )  #
+        #print "UNMARSHALLING IN JSON"
+        #return json.loads( data, object_hook =  DetectHintedParticularTypes )  #
         ########################################################################
 
-    except:
-        ########################################################################
-        #                      or we can stay with DEncode                     #
-        ########################################################################
-        if not data:                                                           #
-            return data                                                        #
-        try:                                                                   #
-            #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]
-            print "UNMARSHALLING IN DEncode"
-            return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )                  #
-        except Exception:                                                      #
-            raise                                                              #
-        ########################################################################
+    #except:
+        ############################################################################
+        #                      or we can stay with DEncode                         #
+        ############################################################################
+    if not data:                                                                   #
+        return data                                                                #
+    try:                                                                           #
+        #print "DECODE FUNCTION : %s" % g_dDecodeFunctions[ sStream [ iIndex ] ]   #
+        splitList = string.split(data, "JSON")                                     #
+        try:                                                                       #
+            ifJson = splitList[1]                                                  #
+            print "UNMARSHALLING JSON DATA"                                        #
+            return json.loads( ifJson, object_hook =  DetectHintedParticularTypes )#
+        except:                                                                    #
+            print "UNMARSHALLING DEncode DATA"                                     #
+            return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )                      #
+    except Exception:                                                              #
+        raise                                                                      #
+    ################################################################################
 
 #if __name__ == "__main__":
     #test_tuple = (1,2,3)
@@ -386,5 +397,14 @@ def decode( data ):
     #print "test_dict = {}".format(test_dict)
     #d = encode(test_dict)
     #print "encoded dict = {}".format(d)
-    #D = decode(d)
-    #print "decoded dict = {}".format(D)
+    #L = string.split(d, "JSON")
+    #DEncodePart = L[0]
+    #print "DEncodePart = {}".format(DEncodePart)
+    #JSONPart = L[1]
+    #print "JSONPart = {}".format(JSONPart)
+    #D1 = decode(d)
+    #print "decoded dict = {}".format(D1)
+    #D2 = decode(DEncodePart)
+    #print "decoded DEncode = {}".format(D2)
+    #D3 = decode(JSONPart)
+    #print "decoded JSON = {}".format(D3)
