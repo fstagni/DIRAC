@@ -235,146 +235,146 @@ g_dDecodeFunctions[ "d" ] = decodeDict
 #                  New code for JSON (un)marshalling                           #
 ################################################################################
 def hintParticularTypes( item ):
-    """This function detects tuples and longs and replaces them with dictionaries.
-    This allows us to prserve these data types. By default, 'json.dumps()' encodes
-    tuples into arrays, (like python lists) and longs into int numbers
-    (like python ints). By using directly 'json.loads()', without
-    'DEncode.hintParticularTypes()', arrays are decoded into lists (so we
-    lose our tuples) and int numbers into ints (then we also lose long ints)."""
+  """This function detects tuples and longs and replaces them with dictionaries.
+  This allows us to prserve these data types. By default, 'json.dumps()' encodes
+  tuples into arrays, (like python lists) and longs into int numbers
+  (like python ints). By using directly 'json.loads()', without
+  'DEncode.hintParticularTypes()', arrays are decoded into lists (so we
+  lose our tuples) and int numbers into ints (then we also lose long ints)."""
 
-    if isinstance( item, tuple ):
-        L = []
-        for i in item:
-            L.append( hintParticularTypes( i ) )
-        newTuple = tuple( L )
-        return {'__tuple__': True, 'items': newTuple}
-    elif isinstance( item, long ):
-        return {'__long__': True, 'value': item}
-    elif isinstance( item, list ):
-        return [hintParticularTypes(e) for e in item]
-    elif isinstance( item, dict ):
-        newDict = {}
-        for key in item:
-            newDict[key] = hintParticularTypes( item[key] )
-        return newDict
-    elif isinstance( item, _dateTimeType ):
-        dateTimeTuple = ( item.year, item.month, item.day, item.hour,
-                          item.minute, item.second,
-                          item.microsecond, item.tzinfo )
-        return {'__dateTime__':True, 'items':dateTimeTuple}
-    elif isinstance(item, _dateType):
-        dateTuple = ( item.year, item.month, item. day )
-        return {"__date__":True, 'items':dateTuple}
-    elif isinstance(item, _timeType):
-        timeTuple = ( item.hour, item.minute, item.second, item.microsecond, item.tzinfo )
-        return {"__time__":True, 'items':timeTuple}
-    else:
-        return item
+  if isinstance( item, tuple ):
+    L = []
+    for i in item:
+      L.append( hintParticularTypes( i ) )
+    newTuple = tuple( L )
+    return { '__tuple__': True, 'items': newTuple }
+  elif isinstance( item, long ):
+    return { '__long__': True, 'value': item }
+  elif isinstance( item, list ):
+    return [ hintParticularTypes( e ) for e in item ]
+  elif isinstance( item, dict ):
+    newDict = {}
+    for key in item:
+      newDict[ key ] = hintParticularTypes( item[ key ] )
+    return newDict
+  elif isinstance( item, _dateTimeType ):
+    dateTimeTuple = ( item.year, item.month, item.day, item.hour,
+                      item.minute, item.second,
+                      item.microsecond, item.tzinfo )
+    return { '__dateTime__':True, 'items':dateTimeTuple }
+  elif isinstance( item, _dateType ):
+    dateTuple = ( item.year, item.month, item. day )
+    return { "__date__":True, 'items':dateTuple }
+  elif isinstance( item, _timeType ):
+    timeTuple = ( item.hour, item.minute, item.second, item.microsecond, item.tzinfo )
+    return { "__time__":True, 'items':timeTuple }
+  else:
+    return item
 
 def DetectHintedParticularTypes( object ):
-    """This function detecs dictionaries encoding tuples and longs and replaces
-    them with the correct data structures. """
-    newTuple = tuple()
-    if isinstance(object, list):
-        return [DetectHintedParticularTypes(e) for e in object]
-    elif isinstance( object, dict ):
-        if '__tuple__' in object:
-            newTuple = DetectHintedParticularTypes( object['items'] )
-            return tuple(newTuple)
-        elif '__long__' in object:
-            return long( object['value'] )
-        elif '__dateTime__' in object:
-            L = list()
-            for i in object['items']:
-                L.append(i)
-            newTuple = tuple(L)
-            return datetime.datetime(*newTuple)
-        elif '__date__' in object:
-            L = list()
-            for i in object['items']:
-                L.append(i)
-            newTuple = tuple(L)
-            return datetime.date(*newTuple)
-        elif '__time__' in object:
-            L = list()
-            for i in object['items']:
-                L.append(i)
-            newTuple = tuple(L)
-            return datetime.time(*newTuple)
-        else:
-            newDict = {}
-            for key in object:
-                newDict[key] = DetectHintedParticularTypes( object[key] )
-            return newDict
-    elif isinstance(object, tuple):
-        L = list()
-        for i in object:
-            L.append( DetectHintedParticularTypes( i ) )
-        newTuple = tuple( L )
-        return newTuple
+  """This function detecs dictionaries encoding tuples and longs and replaces
+  them with the correct data structures. """
+  newTuple = tuple()
+  if isinstance( object, list ):
+    return [ DetectHintedParticularTypes( e ) for e in object ]
+  elif isinstance( object, dict ):
+    if '__tuple__' in object:
+      newTuple = DetectHintedParticularTypes( object[ 'items' ] )
+      return tuple( newTuple )
+    elif '__long__' in object:
+      return long( object['value'] )
+    elif '__dateTime__' in object:
+      L = list()
+      for i in object[ 'items' ]:
+        L.append( i )
+      newTuple = tuple( L )
+      return datetime.datetime( *newTuple )
+    elif '__date__' in object:
+      L = list()
+      for i in object[ 'items' ]:
+        L.append( i )
+      newTuple = tuple( L )
+      return datetime.date( *newTuple )
+    elif '__time__' in object:
+      L = list()
+      for i in object[ 'items' ]:
+        L.append( i )
+      newTuple = tuple( L )
+      return datetime.time( *newTuple )
     else:
-        return object
+      newDict = {}
+      for key in object:
+        newDict[ key ] = DetectHintedParticularTypes( object[ key ] )
+      return newDict
+  elif isinstance( object, tuple ):
+    L = list()
+    for i in object:
+      L.append( DetectHintedParticularTypes( i ) )
+    newTuple = tuple( L )
+    return newTuple
+  else:
+    return object
 
-class newEncoder(json.JSONEncoder):
-    def encode( self, object ):
-        return super( newEncoder, self ).encode( hintParticularTypes( object ) )
+class newEncoder( json.JSONEncoder ):
+  def encode( self, object ):
+    return super( newEncoder, self ).encode( hintParticularTypes( object ) )
 
 #################################################################################
 #################################################################################
 def encode( uObject ):
-    """This function turns the uObject data into serialized data. The final
-    serialized string is the concatenation of:
-    - the serialized data written in DEncode format 
-    - a separartion string, which is 'JSON'
-    - the serialized data written in JSON format
-    The serialized data is written twice in one message. Once in DEncode and 
-    once in JSON.
-        If the machine receiving the data only understands DEncode, then it will
-    detect and read only the DEncode part of the message. The rest will be 
-    ignored.
-        If the machine receiving the data is updated with this DEncode file,
-    then it will split the message and read the JSON part. The DEncode part 
-    will be ignored."""
-    try:                                                                   
+  """This function turns the uObject data into serialized data. The final
+  serialized string is the concatenation of:
+  - the serialized data written in DEncode format
+  - a separartion string, which is 'JSON'
+  - the serialized data written in JSON format
+  The serialized data is written twice in one message. Once in DEncode and
+  once in JSON.
+    If the machine receiving the data only understands DEncode, then it will
+  detect and read only the DEncode part of the message. The rest will be
+  ignored.
+    If the machine receiving the data is updated with this DEncode file,
+  then it will split the message and read the JSON part. The DEncode part
+  will be ignored."""
+  try:
+    #Creating the DEncode part of the serialized data
+    DEncodeString = ""
+    eList = []
+    #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
+    g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )
+    DEncodeString = "".join( eList )
+    print "DEncode STRING CREATED"
 
-         #Creating the DEncode part of the serialized data                  
-        DEncodeString = ""                                                 
-        eList = []                                                         
-        #print "ENCODE FUNCTION : %s" % g_dEncodeFunctions[ type( uObject ) ]
-        g_dEncodeFunctions[ type( uObject ) ]( uObject, eList )            
-        DEncodeString = "".join( eList )                                   
-        print "DEncode STRING CREATED"                                     
-        
-         #Creating the JSON part of the serialized data
-        coding = newEncoder()                                              
-        jsonString = coding.encode( uObject )                              
-        print "JSON STRING CREATED"
+     #Creating the JSON part of the serialized data
+    coding = newEncoder()
+    jsonString = coding.encode( uObject )
+    print "JSON STRING CREATED"
 
-         #Assembling the serialized string and sending it
-        serializedString = DEncodeString + "JSON" + jsonString             
-        print "DEncode and JSON ASSEMBLED AND SENT"                                 
-        return serializedString                                            
-    except Exception:                                                      
-        raise                                                              
+     #Assembling the serialized string and sending it
+    serializedString = DEncodeString + "JSON" + jsonString
+    print "DEncode and JSON ASSEMBLED AND SENT"
+    return serializedString
+  except Exception:
+    raise
 
 def decode( data ):
-    """This function turns a serialized string into a data structure.
-    If the incomming message contains some data written in JSON, then
-    this function will read the JSON part and unmarshall it. If there
-    is no JSON in the message, then this function will unmarshall the
-    incomming message using DEncode protocol."""
-    if not data:
-        return data
+  """This function turns a serialized string into a data structure.
+  If the incomming message contains some data written in JSON, then
+  this function will read the JSON part and unmarshall it. If there
+  is no JSON in the message, then this function will unmarshall the
+  incomming message using DEncode protocol."""
+  if not data:
+    return data
+  try:
+     #Trying to split the message into a DEncode string and a JSON string
+    splitList = string.split( data, "JSON" )
     try:
-         #Trying to split the message into a DEncode string and a JSON string
-        splitList = string.split(data, "JSON")
-        try:
-             #if there is some JSON in the message, then we use JSON to unmarshall it
-            ifJson = splitList[1] print "UNMARSHALLING JSON DATA"
-            return json.loads( ifJson, object_hook =  DetectHintedParticularTypes )
-        except:
-             #If ther is no JSON in the message, we use DEncode to unmarshall it
-            print "UNMARSHALLING DEncode DATA"
-            return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )
+      #if there is some JSON in the message, then we use JSON to unmarshall it
+      ifJson = splitList[ 1 ]
+      print "UNMARSHALLING JSON DATA"
+      return json.loads( ifJson, object_hook =  DetectHintedParticularTypes )
+    except:
+     #If ther is no JSON in the message, we use DEncode to unmarshall it
+      print "UNMARSHALLING DEncode DATA"
+      return g_dDecodeFunctions[ data[ 0 ] ]( data, 0 )
     except Exception:
-        raise
+      raise
