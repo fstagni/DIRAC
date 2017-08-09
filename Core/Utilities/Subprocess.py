@@ -333,7 +333,7 @@ class Subprocess:
             dataStub = retDict[ 'Value' ]
             if not dataStub:
               return S_ERROR( "Error decoding data coming from call" )
-            retObj = DEncode.decode( dataStub )
+            retObj, stubLen = DEncode.decode( dataStub )
             #if stubLen == len( dataStub ):
             return retObj
             #else:
