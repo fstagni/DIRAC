@@ -143,7 +143,7 @@ class OptimizerExecutor( ExecutorModule ):
       return result
     valenc = result[ 'Value' ]
     try:
-      value = DEncode.decode( valenc )
+      value, encLength = DEncode.decode( valenc )
       #if encLength == len( valenc ):
       return S_OK( value )
     except Exception:
