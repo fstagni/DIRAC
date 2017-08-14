@@ -10,12 +10,33 @@ from DIRAC                                                 import S_OK, S_ERROR,
 from DIRAC.ConfigurationSystem.Client.Utilities            import getDBParameters
 from DIRAC.ResourceStatusSystem.DB.ResourceManagementDB    import primaryKeystoList, toList, toDict
 
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, load_only
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Table, Column, MetaData, String, DateTime, BigInteger, exc
 from sqlalchemy.sql import update, select, delete, and_, or_
 
 # Metadata instance that is used to bind the engine, Object and tables
 metadata = MetaData()
+
+Base = declarative_base()
+class ResourceStatus(Base):
+  """ The ResourceStatus table
+  """
+  __tablename__ = 'ResourceStatus'
+  __table_args__ = {'mysql_engine': 'InnoDB',
+                    'mysql_charset': 'utf8'}
+
+  Status = Column( 'Status', String( 8 ), nullable = False, server_default = '' )
+  Reason = Column( 'Reason', String( 512 ), nullable = False, server_default = 'Unspecified' )
+  Name = Column( 'Name', String( 64 ), nullable = False, primary_key = True )
+  DateEffective = Column( 'DateEffective', DateTime, nullable = False )
+  TokenExpiration = Column( 'TokenExpiration', String( 255 ), nullable = False , server_default = '9999-12-31 23:59:59' )
+  ElementType = Column( 'ElementType', String( 32 ), nullable = False, server_default = '' )
+  StatusType = Column( 'StatusType', String( 128 ), nullable = False, server_default = 'all', primary_key = True )
+  LastCheckTime = Column( 'LastCheckTime', DateTime, nullable = False , server_default = '1000-01-01 00:00:00' )
+  TokenOwner = Column( 'TokenOwner', String( 16 ), nullable = False , server_default = 'rs_svc')
+
+
 
 def generateElementStatus(name):
 
@@ -84,32 +105,31 @@ class ResourceStatusDB( object ):
     self.__getDBConnectionInfo( 'ResourceStatus/ResourceStatusDB' )
 
     runDebug = ( gLogger.getLevel() == 'DEBUG' )
-    self.engine = create_engine( 'mysql://%s:%s@%s:%s/%s' % ( self.dbUser, self.dbPass, self.dbHost, self.dbPort, self.dbName ),
+    self.engine = create_engine( 'mysql://%s:%s@%s:%s/%s' % ( self.dbUser,
+                                                              self.dbPass,
+                                                              self.dbHost,
+                                                              self.dbPort,
+                                                              self.dbName ),
                                  echo = runDebug )
 
     metadata.bind = self.engine
 
     self.metadataTables = set()
+    self.elementWithIDTables = [ 'SiteLog', 'SiteHistory', 'ResourceLog', 'ResourceHistory',
+                                 'NodeLog', 'NodeHistory', 'ComponentLog', 'ComponentHistory' ]
 
     self.DBSession = sessionmaker( bind = self.engine )
 
   def createTables( self ):
     """ create tables """
 
-    self.ElementStatusTables = [ 'SiteStatus', 'ResourceStatus',
-                                 'NodeStatus', 'ComponentStatus' ]
-
-    self.ElementWithIDTables = [ 'SiteLog', 'SiteHistory', 'ResourceLog', 'ResourceHistory',
-                                 'NodeLog', 'NodeHistory', 'ComponentLog', 'ComponentHistory' ]
-
     try:
-
-      for names in self.ElementStatusTables:
+      for names in [ 'SiteStatus', 'NodeStatus', 'ComponentStatus' ]:
         if names not in self.metadataTables:
           generateElementStatus(names)
           self.metadataTables.add(names)
 
-      for names in self.ElementWithIDTables:
+      for names in self.elementWithIDTables:
         if names not in self.metadataTables:
           generateElementWithID(names)
           self.metadataTables.add(names)
@@ -145,7 +165,7 @@ class ResourceStatusDB( object ):
       for u in result:
         rel = []
         for j in u:
-         rel.append(j)
+          rel.append(j)
 
         arr.append(rel)
 
@@ -158,20 +178,33 @@ class ResourceStatusDB( object ):
     finally:
       session.close()
 
-  def select( self, element, tableType, name = None, statusType = None,
-              status = None, elementType = None, reason = None,
-              dateEffective = None, lastCheckTime = None,
-              tokenOwner = None, tokenExpiration = None, meta = None ):
+  def select( self, element, tableType, name = [], statusType = [],
+              status = [], elementType = [], reason = [],
+              dateEffective = [], lastCheckTime = [],
+              tokenOwner = [], tokenExpiration = [], meta = [] ):
 
     session = self.DBSession()
+    if not name:
+      name = []
+    if not statusType: statusType = []
+    if not status: status = []
+    if not elementType: elementType = []
+    if not reason: reason = []
+    if not dateEffective: dateEffective = []
+    if not lastCheckTime: lastCheckTime = []
+    if not tokenOwner: tokenOwner = []
+    if not tokenExpiration: tokenExpiration = []
+    if not meta: meta = []
+
 
     try:
 
       table = metadata.tables.get( element + tableType )
 
-      args = toList( table, Name = name, StatusType = statusType, Status = status, ElementType = elementType,
-                     Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
-                     TokenOwner = tokenOwner, TokenExpiration = tokenExpiration )
+
+    #   args = toList( table, Name = name, StatusType = statusType, Status = status, ElementType = elementType,
+    #                  Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
+    #                  TokenOwner = tokenOwner, TokenExpiration = tokenExpiration )
 
       # this is the variable where we store the column names that correspond to the values that we are going to return
       columnNames = []
@@ -187,25 +220,37 @@ class ResourceStatusDB( object ):
                                   .where( and_(*args) ) )
 
       else:
-        result = session.query( table ).filter(*args)
-
-        for name in table.columns.keys():
-          columnNames.append( str(name) )
+        #session.query(User).filter(User.name.in_(['pippo', 'topolino'])).all()
+#        result = session.query( ResourceStatus ).filter(or_(ResourceStatus.Name.in_(name), ResourceStatus.Status.in_(status)))
+        result = session.query( ResourceStatus ).filter(or_(
+            ResourceStatus.Name.in_(name),
+            ResourceStatus.Status.in_(status),
+            ResourceStatus.StatusType.in_(statusType),
+            ResourceStatus.ElementType.in_(elementType),
+            ResourceStatus.Reason.in_(reason),
+            ResourceStatus.DateEffective.in_(dateEffective),
+            ResourceStatus.LastCheckTime.in_(lastCheckTime),
+            ResourceStatus.TokenOwner.in_(tokenOwner),
+            ResourceStatus.TokenExpiration.in_(tokenExpiration)
+            )).options(load_only(['Name']))
+#        for name in table.columns.keys():
+#          columnNames.append( str(name) )
 
       arr = []
 
       for u in result:
         rel = []
         for j in u:
-         rel.append(j)
+          rel.append(j)
 
         arr.append(rel)
 
       finalResult = S_OK( arr )
 
       # add column names
-      finalResult['Columns'] = columnNames
-
+      finalResult['Columns'] = ['Name', 'ResourceType', 'Status', 'Reason',
+                                'DateEffective', 'LastCheckTime', 'TokenOwner',
+                                'TokenExpiration']
       return finalResult
 
     except exc.SQLAlchemyError as e:
@@ -262,20 +307,20 @@ class ResourceStatusDB( object ):
       table = metadata.tables.get( element + tableType )
 
       # fields to be selected (primary keys)
-      if table in self.ElementWithIDTables:
+      if table in self.elementWithIDTables:
         args = toList(table, ID = ID)
       else:
         args = toList(table, Name = name, StatusType = statusType)
 
       # fields to be updated
       params = toDict( Name = name, StatusType = statusType, Status = status, ElementType = elementType,
-                            Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
-                            TokenOwner = tokenOwner, TokenExpiration = tokenExpiration )
+                       Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
+                       TokenOwner = tokenOwner, TokenExpiration = tokenExpiration )
 
       session.execute( update( table )
-                        .where( and_(*args) )
-                        .values( **params )
-                      )
+                       .where( and_(*args) )
+                       .values( **params )
+                     )
 
       session.commit()
       session.expunge_all()
@@ -301,12 +346,10 @@ class ResourceStatusDB( object ):
       table = metadata.tables.get( element + tableType )
 
       args = toList(table, Name = name, StatusType = statusType, Status = status, ElementType = elementType,
-                                Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
-                                TokenOwner = tokenOwner, TokenExpiration = tokenExpiration, Meta = meta)
+                    Reason = reason, DateEffective = dateEffective, LastCheckTime = lastCheckTime,
+                    TokenOwner = tokenOwner, TokenExpiration = tokenExpiration, Meta = meta)
 
-      session.execute( delete( table )
-                            .where( or_(*args) )
-                          )
+      session.execute( delete( table ).where( or_(*args) ))
 
       session.commit()
 
@@ -348,9 +391,7 @@ class ResourceStatusDB( object ):
       finally:
         session.close()
 
-    return S_OK()
-
-  def addIfNotThere( self, element, tableType, name, statusType,
+ def addIfNotThere( self, element, tableType, name, statusType,
                      status, elementType, reason,
                      dateEffective, lastCheckTime,
                      tokenOwner, tokenExpiration, log = None ):
