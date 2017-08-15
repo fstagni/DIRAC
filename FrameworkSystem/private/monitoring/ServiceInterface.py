@@ -283,7 +283,7 @@ class ServiceInterface( object ):
     if len( views ) == 0:
       return S_ERROR( "View does not exist" )
     viewData = views[0]
-    viewDefinition = DEncode.decode( str( viewData[ 0 ] ) )[0]
+    viewDefinition = DEncode.decode( str( viewData[ 0 ] ) )
     neededVarFields = List.fromChar( viewData[1], "," )
     if len( neededVarFields ) > 0:
       if not 'varData' in viewRequest:
@@ -440,3 +440,4 @@ class ServiceInterface( object ):
     return self.compmonDB.getComponentsStatus( condDict )
 
 gServiceInterface = ServiceInterface()
+
