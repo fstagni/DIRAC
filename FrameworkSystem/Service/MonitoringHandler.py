@@ -84,7 +84,7 @@ class MonitoringHandler( RequestHandler ):
     """
       Generates plots based on a DEncoded view description
     """
-    viewDescription, _stubLength = DEncode.decode( viewDescriptionStub )
+    viewDescription = DEncode.decode( viewDescriptionStub )
     if not 'definition' in viewDescription:
       return S_ERROR( "No plot definition given" )
     defDict = viewDescription[ 'definition' ]
@@ -98,7 +98,7 @@ class MonitoringHandler( RequestHandler ):
     """
     if len( viewName ) == 0:
       return S_OK( "View name not valid" )
-    viewDescription, _stubLength = DEncode.decode( viewDescriptionStub )
+    viewDescription = DEncode.decode( viewDescriptionStub )
     if not 'definition' in viewDescription:
       return S_ERROR( "No plot definition given" )
     defDict = viewDescription[ 'definition' ]
@@ -209,3 +209,4 @@ class MonitoringHandler( RequestHandler ):
       return retVal
     fileHelper.sendEOF()
     return S_OK()
+

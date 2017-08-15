@@ -143,7 +143,7 @@ class OptimizerExecutor( ExecutorModule ):
       return result
     valenc = result[ 'Value' ]
     try:
-      value, encLength = DEncode.decode( valenc )
+      value = DEncode.decode( valenc )
       #if encLength == len( valenc ):
       return S_OK( value )
     except Exception:
@@ -180,3 +180,4 @@ class OptimizerExecutor( ExecutorModule ):
       return S_OK()
     self.log.info( "[JID %s] Fast track possible to %s" % ( jid, minorStatus ) )
     return S_OK( "WorkloadManagement/%s" % minorStatus )
+
