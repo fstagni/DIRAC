@@ -150,8 +150,8 @@ def execute( arguments ):
     gLogger.exception('Job failed in execution phase')
     gJobReport.setJobParameter('Error Message', str(exc), sendFlag=False)
     gJobReport.setJobStatus(
-        'Failed', 'Exception During Execution', sendFlag=False)
-    job.sendFailoverRequest('Failed', 'Exception During Execution')
+        'Failed', 'JobWrapperError During Execution', sendFlag=False)
+    job.sendFailoverRequest('Failed', 'JobWrapperError During Execution')
     return 1
   except Exception as exc: #pylint: disable=broad-except
     gLogger.exception( 'Job raised exception during execution phase', lException = exc )
@@ -175,8 +175,8 @@ def execute( arguments ):
     except Exception as exc:  # pylint: disable=broad-except
       gLogger.exception( 'JobWrapper raised exception while processing output files', lException = exc )
       gJobReport.setJobParameter( 'Error Message', str( exc ), sendFlag = False )
-      gJobReport.setJobStatus( 'Failed', 'Uploading Job Outputs', sendFlag = False )
-      job.sendFailoverRequest( 'Failed', 'Uploading Job Outputs' )
+      gJobReport.setJobStatus( 'Failed', 'Exception while Uploading Job Outputs', sendFlag = False )
+      job.sendFailoverRequest( 'Failed', 'Exception while Uploading Job Outputs' )
       return 2
   else:
     gLogger.verbose( 'Job has no OutputData or OutputSandbox requirement' )
@@ -204,6 +204,11 @@ try:
     raise ValueError, "jobArgs does not contain 'Job' key: %s" %str(jobArgs)
   ret = execute( jobArgs )
   gJobReport.commit()
+
+  #FIXME: should we kill the payload here? 
+  # if ret:
+  #   kill the payload
+
 except Exception as exc: #pylint: disable=broad-except
   gLogger.exception("JobWrapperTemplate exception", lException = exc)
   try:
