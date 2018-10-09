@@ -14,7 +14,7 @@ Script.registerSwitch('V:', 'vo=', "set the VO.")
 Script.registerSwitch('S:', 'setup=', "set the software dist module to update.")
 Script.registerSwitch('D:', 'softwareDistModule=', "set the software dist module to update.")
 
-Script.parseCommandLine()
+Script.parseCommandLine(ignoreErrors=True)
 args = Script.getPositionalArgs()
 
 from DIRAC import gConfig
