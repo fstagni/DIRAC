@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent lhcbci-cernvm
+    agent { label 'lhcbci-cernvm' }
     stages {
         stage('Build') {
             steps {
