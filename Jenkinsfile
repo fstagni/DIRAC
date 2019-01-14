@@ -39,7 +39,7 @@ pipeline {
 
                 sh """
                     set -e
-                    source TestCode/Pilot/tests/CI/pilot_ci.sh
+                    source $WORKSPACE/TestCode/Pilot/tests/CI/pilot_ci.sh
 
                     export DIRACSETUP=LHCb-Certification
                     export JENKINS_QUEUE=jenkins-queue_not_important
