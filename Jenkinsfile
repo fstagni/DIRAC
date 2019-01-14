@@ -14,6 +14,8 @@ pipeline {
         stage('GET') {
             steps {
 
+                cleanWs()
+
                 dir("${PWD}/TestCode") {
                    deleteDir()
                 }
