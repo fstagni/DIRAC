@@ -16,7 +16,7 @@ pipeline {
                 echo "Here getting the code"
 
                 sh """
-                    mkdir $PWD/TestCode
+                    mkdir -p $PWD/TestCode
                     cd $PWD/TestCode
 
                     git clone https://github.com/${params.Pilot_repo}/Pilot.git
@@ -58,6 +58,24 @@ pipeline {
             steps {
                 echo "Starting the tests"
             }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+            deleteDir() /* clean up our workspace */
+        }
+        success {
+            echo 'I succeeeded!'
+        }
+        unstable {
+            echo 'I am unstable :/'
+        }
+        failure {
+            echo 'I failed :('
+        }
+        changed {
+            echo 'Things were different before...'
         }
     }
 }
