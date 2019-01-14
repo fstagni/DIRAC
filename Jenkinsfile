@@ -15,7 +15,7 @@ pipeline {
             steps {
                 echo "Here getting the code"
 
-                sh '''
+                sh """
                     mkdir $PWD/TestCode
                     cd $PWD/TestCode
 
@@ -28,7 +28,7 @@ pipeline {
                     cd DIRAC
                     git checkout ${params.DIRAC_test_branch}
                     cd ../..
-                '''
+                """
 
                 echo "Got the test code"
             }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 echo "Sourcing and installing"
 
-                sh '''
+                sh """
                     set -e
                     source TestCode/Pilot/tests/CI/pilot_ci.sh
 
@@ -49,7 +49,7 @@ pipeline {
 
                     cd $WORKSPACE/PilotInstallDIR
                     source $WORKSPACE/PilotInstallDIR/environmentLHCbDirac
-                '''
+                """
 
                 echo "**** Pilot INSTALLATION DONE ****"
             }
