@@ -13,7 +13,10 @@ pipeline {
     stages {
         stage('GET') {
             steps {
-                cleanWs()
+
+                dir("${PWD}/TestCode") {
+                   deleteDir()
+                }
 
                 echo "Here getting the code"
 
