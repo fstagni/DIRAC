@@ -19,7 +19,7 @@ pipeline {
                     mkdir $PWD/TestCode
                     cd $PWD/TestCode
 
-                    git clone https://github.com/${params.Pilot_repo}/DIRAC.git
+                    git clone https://github.com/${params.Pilot_repo}/Pilot.git
                     cd Pilot
                     git checkout ${params.Pilot_branch}
                     cd ..
