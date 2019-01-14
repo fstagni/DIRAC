@@ -13,6 +13,8 @@ pipeline {
     stages {
         stage('GET') {
             steps {
+                cleanWs()
+
                 echo "Here getting the code"
 
                 sh """
