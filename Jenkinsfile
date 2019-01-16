@@ -44,6 +44,11 @@ pipeline {
             steps {
                 echo "Sourcing and installing"
 
+                sh "pwd"
+                sh "ls -l"
+                sh "ls -l $WORKSPACE/TestCode/"
+                sh "ls -l $WORKSPACE/TestCode/Pilot"
+
                 sh """
                     set -e
                     source $WORKSPACE/TestCode/Pilot/tests/CI/pilot_ci.sh
