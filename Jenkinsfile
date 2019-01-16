@@ -23,8 +23,8 @@ pipeline {
                 echo "Here getting the code"
 
                 sh """
-                    mkdir -p $PWD/TestCode
-                    cd $PWD/TestCode
+                    mkdir -p $WORKSPACE/TestCode
+                    cd $WORKSPACE/TestCode
 
                     git clone https://github.com/${params.Pilot_repo}/Pilot.git
                     cd Pilot
