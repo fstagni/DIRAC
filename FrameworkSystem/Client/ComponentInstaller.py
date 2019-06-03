@@ -1617,7 +1617,7 @@ class ComponentInstaller(object):
           DIRAC.exit(-1)
         return S_ERROR(result['Message'])
       processList = result['Value'][1].split('\n')
-      cmd = 'runsvdir %s' % self.startDir
+      cmd = 'runsvdir '
       cmdFound = False
       for process in processList:
         if process.find(cmd) != -1:
@@ -1627,7 +1627,7 @@ class ComponentInstaller(object):
         os.system("runsvdir %s 'log:  DIRAC runsv' &" % self.startDir)
 
     if ['Configuration', 'Server'] in setupServices and setupConfigurationMaster:
-      # This server hosts the Master of the CS
+      # This server hosts the Master CS
       from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
       gLogger.notice('Installing Master Configuration Server')
       cfg = self.__getCfg(cfgPath('DIRAC', 'Setups', self.setup), 'Configuration', self.instance)
