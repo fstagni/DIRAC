@@ -336,6 +336,7 @@ function fullInstallDIRAC(){
   echo '==> Initializing status of sites and resources in RSS'
   dirac-rss-sync --init -o LogLevel=VERBOSE
   # Setting by hand
+  dirac-rss-set-status --element Resource --name RAL-ECHO --status Active --reason "Why not?"
   dirac-rss-set-status --element Resource --name ProductionSandboxSE --status Active --reason "Why not?"
   dirac-rss-set-status --element Resource --name jenkins.cern.ch --status Active --reason "Why not?"
   dirac-rss-set-status --element Resource --name JENKINS-FTS3 --status Active --reason "Why not?"

@@ -65,6 +65,54 @@ csAPI.setOption('Resources/StorageElements/ProductionSandboxSE/DIP/Protocol', 'd
 csAPI.setOption('Resources/StorageElements/ProductionSandboxSE/DIP/Access', 'remote')
 csAPI.setOption('Resources/StorageElements/ProductionSandboxSE/DIP/Path', '%s/sandboxes' % setupName)
 
+# Now setting a RAL-ECHO SE as the following:
+#     RAL-ECHO
+#     {
+#       BackendType = Echo
+#       AccessProtocols = gsiftp,root
+#       WriteProtocols = gsiftp
+#       XRootConfig
+#       {
+#         PluginName= Echo
+#         Protocol = root
+#         Access = remote
+#       }
+#       GridFTPConfig
+#       {
+#         PluginName= Echo
+#         Protocol = gsiftp
+#         Access = remote
+#       }
+#     }
+res = csAPI.createSection('Resources/StorageElements/')
+if not res['OK']:
+  print res['Message']
+  exit(1)
+
+res = csAPI.createSection('Resources/StorageElements/RAL-ECHO')
+if not res['OK']:
+  print res['Message']
+  exit(1)
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/BackendType', 'Echo')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/AccessProtocols', 'gsiftp,root')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/WriteProtocols', 'gsiftp')
+
+res = csAPI.createSection('Resources/StorageElements/RAL-ECHO/XRootConfig')
+if not res['OK']:
+  print res['Message']
+  exit(1)
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/XRootConfig/PluginName', 'Echo')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/XRootConfig/Protocol', 'root')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/XRootConfig/Access', 'remote')
+
+res = csAPI.createSection('Resources/StorageElements/RAL-ECHO/GridFTPConfig')
+if not res['OK']:
+  print res['Message']
+  exit(1)
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/GridFTPConfig/PluginName', 'Echo')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/GridFTPConfig/Protocol', 'gsiftp')
+csAPI.setOption('Resources/StorageElements/RAL-ECHO/GridFTPConfig/Access', 'remote')
+
 # Now setting a FileCatalogs section as the following:
 #     FileCatalogs
 #     {
