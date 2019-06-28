@@ -24,6 +24,8 @@ if not os.path.isdir('%s/sandboxes' % setupName):
 from DIRAC.ConfigurationSystem.Client.CSAPI import CSAPI
 csAPI = CSAPI()
 
+csAPI.setOption('DIRAC/VirtualOrganization', 'DIRAC')
+
 csAPI.setOption('Systems/WorkloadManagement/Production/Services/SandboxStore/BasePath', '%s/sandboxes' % setupName)
 csAPI.setOption('Systems/WorkloadManagement/Production/Services/SandboxStore/LogLevel', 'DEBUG')
 
