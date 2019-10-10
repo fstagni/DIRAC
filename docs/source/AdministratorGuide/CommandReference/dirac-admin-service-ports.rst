@@ -29,8 +29,6 @@ Example::
    'Framework/ProxyManager': 9152,
    'Framework/SecurityLogging': 9153,
    'Framework/SystemAdministrator': 9162,
-   'Framework/SystemLogging': 9141,
-   'Framework/SystemLoggingReport': 9144,
    'Framework/UserProfileManager': 9155,
    'RequestManagement/RequestManager': 9143,
    'WorkloadManagement/JobManager': 9132,
