@@ -75,12 +75,12 @@ class MonitoringDB(ElasticDB):
 
   def registerType(self, index, mapping, period=None):
     """
-    It register the type and index, if does not exists
+    It register the type and index, if it does not exist
 
     :param str index: name of the index
     :param dict mapping: mapping used to create the index.
-    :param str period: We can specify, which kind of indexes will be created.
-                       Currently only daily and monthly indexes are supported.
+    :param str period: We can specify which kind of indices will be created.
+                       Currently only daily and monthly indices are supported.
 
     """
 
@@ -103,8 +103,7 @@ class MonitoringDB(ElasticDB):
       result = self.createIndex(index, mapping, period)
       if not result['OK']:
         self.log.error(result['Message'])
-      else:
-        return result
+      return result
 
   def getKeyValues(self, typeName):
     """
