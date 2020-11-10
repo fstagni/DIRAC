@@ -20,10 +20,10 @@ __RCSID__ = '$Id$'
 import datetime
 import math
 from six.moves import queue as Queue
+from concurrent.futures import ThreadPoolExecutor
 
 from DIRAC import S_ERROR, S_OK
 from DIRAC.Core.Base.AgentModule import AgentModule
-from DIRAC.Core.Utilities.ThreadPool import ThreadPool
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ResourceStatusSystem.PolicySystem.PEP import PEP
 
@@ -71,8 +71,7 @@ class ElementInspectorAgent(AgentModule):
     """ Standard initialize.
     """
 
-    maxNumberOfThreads = self.am_getOption('maxNumberOfThreads', self.__maxNumberOfThreads)
-    self.threadPool = ThreadPool(maxNumberOfThreads, maxNumberOfThreads)
+    self.maxNumberOfThreads = self.am_getOption('maxNumberOfThreads', self.__maxNumberOfThreads)
 
     self.elementType = self.am_getOption('elementType', self.elementType)
 
@@ -128,10 +127,9 @@ class ElementInspectorAgent(AgentModule):
 
     self.log.info('Needed %d threads to process %d elements' % (numberOfThreads, queueSize))
 
-    for _x in range(numberOfThreads):
-      jobUp = self.threadPool.generateJobAndQueueIt(self._execute)
-      if not jobUp['OK']:
-        self.log.error(jobUp['Message'])
+    with ThreadPoolExecutor(max(numberOfThreads, self.maxNumberOfThreads)) as tp:
+      for _x in range(numberOfThreads):
+        tp.submit(self._execute)
 
     self.log.info('blocking until all elements have been processed')
     # block until all tasks are done

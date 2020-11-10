@@ -18,10 +18,10 @@ from six.moves import queue as Queue
 import os
 import datetime
 import pickle
+from concurrent.futures import ThreadPoolExecutor
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Base.AgentModule import AgentModule
-from DIRAC.Core.Utilities.ThreadPool import ThreadPool
 from DIRAC.Core.Utilities.ThreadSafe import Synchronizer
 from DIRAC.Core.Utilities.List import breakListIntoChunks, randomize
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
@@ -115,11 +115,11 @@ class TransformationAgent(AgentModule, TransformationAgentsUtilities):
 
     # Get it threaded
     maxNumberOfThreads = self.am_getOption('maxThreadsInPool', 1)
-    threadPool = ThreadPool(maxNumberOfThreads, maxNumberOfThreads)
+    threadPool = ThreadPoolExecutor(maxNumberOfThreads)
     self.log.info("Multithreaded with %d threads" % maxNumberOfThreads)
 
     for i in range(maxNumberOfThreads):
-      threadPool.generateJobAndQueueIt(self._execute, [i])
+      threadPool.submit(self._execute, [i])
 
     self.log.info("Will treat the following transformation types: %s" % str(self.transformationTypes))
 
@@ -448,7 +448,7 @@ class TransformationAgent(AgentModule, TransformationAgentsUtilities):
       clearCache = os.path.exists(clearCacheFile)
       if clearCache:
         os.remove(clearCacheFile)
-    except BaseException:
+    except Exception:
       pass
     if clearCache or transDict['Status'] == 'Flush':
       self._logInfo("Replica cache cleared", method=method, transID=transID)
@@ -705,5 +705,5 @@ class TransformationAgent(AgentModule, TransformationAgentsUtilities):
           self._logInfo("Removed cached replicas for transformation", method='pluginCallBack', transID=transID)
           self.replicaCache.pop(transID)
           self.__writeCache(transID)
-      except BaseException:
+      except Exception:
         pass

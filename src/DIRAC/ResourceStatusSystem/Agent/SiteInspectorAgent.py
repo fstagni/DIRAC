@@ -18,10 +18,10 @@ __RCSID__ = '$Id$'
 
 import math
 from six.moves import queue as Queue
+from concurrent.futures import ThreadPoolExecutor
 
 from DIRAC import S_OK
 from DIRAC.Core.Base.AgentModule import AgentModule
-from DIRAC.Core.Utilities.ThreadPool import ThreadPool
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ResourceStatusSystem.PolicySystem.PEP import PEP
 
@@ -63,8 +63,7 @@ class SiteInspectorAgent(AgentModule):
     """ Standard initialize.
     """
 
-    maxNumberOfThreads = self.am_getOption('maxNumberOfThreads', self.__maxNumberOfThreads)
-    self.threadPool = ThreadPool(maxNumberOfThreads, maxNumberOfThreads)
+    self.maxNumberOfThreads = self.am_getOption('maxNumberOfThreads', self.__maxNumberOfThreads)
 
     res = ObjectLoader().loadObject('DIRAC.ResourceStatusSystem.Client.SiteStatus',
                                     'SiteStatus')
@@ -114,10 +113,9 @@ class SiteInspectorAgent(AgentModule):
 
     self.log.info('Needed %d threads to process %d elements' % (numberOfThreads, queueSize))
 
-    for _x in range(numberOfThreads):
-      jobUp = self.threadPool.generateJobAndQueueIt(self._execute)
-      if not jobUp['OK']:
-        self.log.error(jobUp['Message'])
+    with ThreadPoolExecutor(max(numberOfThreads, self.maxNumberOfThreads)) as tp:
+      for _x in range(numberOfThreads):
+        tp.submit(self._execute)
 
     self.log.info('blocking until all sites have been processed')
     # block until all tasks are done
@@ -184,7 +182,23 @@ class SiteInspectorAgent(AgentModule):
         resEnforce = pep.enforce(site)
         if not resEnforce['OK']:
           self.log.error('Failed policy enforcement', resEnforce['Message'])
-      except Exception as e:
+      except Exception as _:
         self.log.exception('Exception during enforcement')
+        continue
+
+      resEnforce = resEnforce['Value']
+
+      oldStatus = resEnforce['decisionParams']['status']
+      statusType = resEnforce['decisionParams']['statusType']
+      newStatus = resEnforce['policyCombinedResult']['Status']
+      reason = resEnforce['policyCombinedResult']['Reason']
+
+      if oldStatus != newStatus:
+        self.log.info('%s (%s) is now %s ( %s ), before %s' % (site['name'],
+                                                               statusType,
+                                                               newStatus,
+                                                               reason,
+                                                               oldStatus))
+
       # Used together with join !
       self.sitesToBeChecked.task_done()

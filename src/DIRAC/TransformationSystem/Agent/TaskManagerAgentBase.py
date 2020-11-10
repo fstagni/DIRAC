@@ -16,12 +16,12 @@ __RCSID__ = "$Id$"
 import time
 import datetime
 from six.moves.queue import Queue
+from concurrent.futures import ThreadPoolExecutor
 
 from DIRAC import S_OK
 
 from DIRAC.Core.Base.AgentModule import AgentModule
 from DIRAC.Core.Security.ProxyInfo import getProxyInfo
-from DIRAC.Core.Utilities.ThreadPool import ThreadPool
 from DIRAC.Core.Utilities.List import breakListIntoChunks
 from DIRAC.Core.Utilities.Dictionaries import breakDictionaryIntoChunks
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
@@ -100,11 +100,11 @@ class TaskManagerAgentBase(AgentModule, TransformationAgentsUtilities):
       return resCred
     # setting up the threading
     maxNumberOfThreads = self.am_getOption('maxNumberOfThreads', 15)
-    threadPool = ThreadPool(maxNumberOfThreads, maxNumberOfThreads)
     self.log.verbose("Multithreaded with %d threads" % maxNumberOfThreads)
 
-    for i in range(maxNumberOfThreads):
-      threadPool.generateJobAndQueueIt(self._execute, [i])
+    with ThreadPoolExecutor(maxNumberOfThreads) as threadPool:
+      for i in range(maxNumberOfThreads):
+        threadPool.submit(self._execute, [i])
 
     return S_OK()
 
