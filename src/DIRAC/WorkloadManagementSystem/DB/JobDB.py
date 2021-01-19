@@ -898,24 +898,17 @@ class JobDB(DB):
       return ret
     jobID = ret['Value']
 
-    ret = self._escapeString(compressJDL(jdl))
-    if not ret['OK']:
-      return ret
-    e_JDL = ret['Value']
-
-    ret = self._escapeString(compressJDL(originalJDL))
-    if not ret['OK']:
-      return ret
-    e_originalJDL = ret['Value']
-
     req = "SELECT OriginalJDL FROM JobJDLs WHERE JobID=%s" % jobID
     result = self._query(req)
     updateFlag = False
-    if result['OK']:
-      if result['Value']:
-        updateFlag = True
+    if result['OK'] and result['Value']:
+      updateFlag = True
 
     if jdl:
+      ret = self._escapeString(compressJDL(jdl))
+      if not ret['OK']:
+        return ret
+      e_JDL = ret['Value']
 
       if updateFlag:
         cmd = "UPDATE JobJDLs Set JDL=%s WHERE JobID=%s" % (e_JDL, jobID)
@@ -924,7 +917,13 @@ class JobDB(DB):
       result = self._update(cmd)
       if not result['OK']:
         return result
+
     if originalJDL:
+      ret = self._escapeString(compressJDL(originalJDL))
+      if not ret['OK']:
+        return ret
+      e_originalJDL = ret['Value']
+
       if updateFlag:
         cmd = "UPDATE JobJDLs Set OriginalJDL=%s WHERE JobID=%s" % (e_originalJDL, jobID)
       else:
@@ -943,7 +942,7 @@ class JobDB(DB):
 
     result = self.insertFields('JobJDLs',
                                ['JDL', 'JobRequirements', 'OriginalJDL'],
-			       ['', '', compressJDL(jdl)])
+                               ['', '', compressJDL(jdl)])
     if not result['OK']:
       self.log.error('Can not insert New JDL', result['Message'])
       return result
