@@ -76,15 +76,15 @@ class JobsStateMachine(StateMachine):
     super(JobsStateMachine, self).__init__(state)
 
     # States transitions
-    self.states = {KILLED: State(3),  # final state
-                   DELETED: State(3),  # final state
-                   FAILED: State(3, [RESCHEDULED, KILLED, DELETED], defState=DELETED),
-                   COMPLETED: State(3, [DONE, FAILED, KILLED, DELETED], defState=DONE),
-                   DONE: State(3, [KILLED, DELETED], defState=DELETED),
-                   COMPLETING: State(3, [DONE, FAILED, COMPLETED], defState=COMPLETED),
-                   STALLED: State(3, [RUNNING], defState=RUNNING),  # CHECK!
-                   RUNNING: State(3, [STALLED, DONE, FAILED, COMPLETING], defState=DONE),
-                   RESCHEDULED: State(3, [WAITING], defState=WAITING),
+    self.states = {KILLED: State(14),  # final state
+                   DELETED: State(13),  # final state
+                   FAILED: State(12, [RESCHEDULED, KILLED, DELETED], defState=DELETED),
+                   DONE: State(11, [KILLED, DELETED], defState=DELETED),
+                   COMPLETED: State(10, [DONE, FAILED, KILLED, DELETED], defState=DONE),
+                   COMPLETING: State(9, [DONE, FAILED, COMPLETED], defState=COMPLETED),
+                   STALLED: State(8, [RUNNING], defState=RUNNING),  # CHECK!
+                   RUNNING: State(7, [RESCHEDULED, STALLED, DONE, FAILED, COMPLETING], defState=DONE),
+                   RESCHEDULED: State(6, [WAITING, RECEIVED], defState=WAITING),
                    MATCHED: State(5, [RUNNING], defState=RUNNING),
                    WAITING: State(4, [MATCHED, RESCHEDULED], defState=MATCHED),
                    STAGING: State(3, [WAITING], defState=WAITING),
