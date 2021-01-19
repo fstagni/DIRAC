@@ -216,7 +216,7 @@ class ElementInspectorAgent(AgentModule):
 
       try:
         resEnforce = pep.enforce(element)
-      except Exception as e:
+      except Exception as _:
         self.log.exception('Exception during enforcement')
         resEnforce = S_ERROR('Exception during enforcement')
       if not resEnforce['OK']:

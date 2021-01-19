@@ -20,7 +20,7 @@ import math
 from six.moves import queue as Queue
 from concurrent.futures import ThreadPoolExecutor
 
-from DIRAC import S_OK
+from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Base.AgentModule import AgentModule
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 from DIRAC.ResourceStatusSystem.PolicySystem.PEP import PEP
@@ -180,10 +180,12 @@ class SiteInspectorAgent(AgentModule):
 
       try:
         resEnforce = pep.enforce(site)
-        if not resEnforce['OK']:
-          self.log.error('Failed policy enforcement', resEnforce['Message'])
       except Exception as _:
         self.log.exception('Exception during enforcement')
+        resEnforce = S_ERROR('Exception during enforcement')
+      if not resEnforce['OK']:
+        self.log.error('Failed policy enforcement', resEnforce['Message'])
+        self.sitesToBeChecked.task_done()
         continue
 
       resEnforce = resEnforce['Value']
