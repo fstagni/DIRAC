@@ -589,24 +589,6 @@ class JobMonitoringHandler(RequestHandler):
     return cls.jobDB.getJobParameters(jobIDs, parName)
 
 ##############################################################################
-  types_traceJobParameter = [six.string_types, six.string_types + (int, long, list),
-                             six.string_types, six.string_types + (None,),
-                             six.string_types + (None,)]
-
-  @classmethod
-  def export_traceJobParameter(cls, site, localID, parameter, date, until):
-    return cls.jobDB.traceJobParameter(site, localID, parameter, date, until)
-
-##############################################################################
-  types_traceJobParameters = [six.string_types, six.string_types + (int, long, list),
-                              [list, None], [list, None],
-                              six.string_types + (None,), six.string_types + (None,)]
-
-  @classmethod
-  def export_traceJobParameters(cls, site, localID, parameterList, attributeList, date, until):
-    return cls.jobDB.traceJobParameters(site, localID, parameterList, attributeList, date, until)
-
-##############################################################################
   types_getAtticJobParameters = [[int, long]]
 
   @classmethod
