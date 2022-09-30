@@ -1,7 +1,5 @@
 """ This object is a wrapper for setting and getting jobs states
 """
-import datetime
-
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.WorkloadManagementSystem.Client.JobState.JobManifest import JobManifest
 from DIRAC.WorkloadManagementSystem.Client import JobStatus
@@ -162,7 +160,7 @@ class JobState:
     right_setStatus = RIGHT_GET_INFO
 
     def setStatus(self, majorStatus=None, minorStatus=None, appStatus=None, source=None):
-        return JobStatusUtility(self.__db.jobDB, self.__db.logDB).setJobStatus(
+        return JobStatusUtility(self.__db.jobDB, self.__db.logDB, self.__db.esJobParametersDB).setJobStatus(
             self.jid, status=majorStatus, minorStatus=minorStatus, appStatus=appStatus, source=source
         )
 
