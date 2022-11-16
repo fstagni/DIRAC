@@ -120,6 +120,8 @@ EWMSRESC = 1502
 EWMSSUBM = 1503
 EWMSJMAN = 1504
 EWMSSTATUS = 1505
+EWMSNOMATCH = 1510
+EWMSPLTVER = 1511
 EWMSNOPILOT = 1550
 
 # ## DMS/StorageManagement (16XX)
@@ -195,6 +197,8 @@ dErrorCode = {
     1503: "EWMSSUBM",
     1504: "EWMSJMAN",
     1505: "EWMSSTATUS",
+    1510: "EWMSNOMATCH",
+    1511: "EWMSPLTVER",
     1550: "EWMSNOPILOT",
     # DMS/StorageManagement
     1601: "EFILESIZE",
@@ -267,6 +271,8 @@ dStrError = {  # Generic (10XX)
     EWMSJMAN: "Job management error",
     EWMSSTATUS: "Job status error",
     EWMSNOPILOT: "No pilots found",
+    EWMSPLTVER: "Pilot version does not match",
+    EWMSNOMATCH: "No match found",
     # DMS/StorageManagement
     EFILESIZE: "Bad file size",
     EGFAL: "Error with the gfal call",

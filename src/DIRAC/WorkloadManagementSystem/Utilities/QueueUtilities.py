@@ -58,9 +58,7 @@ def getQueuesResolved(
 
                 if pilotRunDirectory:
                     queueDict[queueName]["ParametersDict"]["JobExecDir"] = pilotRunDirectory
-                qwDir = os.path.join(workingDir, queue)
-                mkDir(qwDir)
-                queueDict[queueName]["ParametersDict"]["WorkingDirectory"] = qwDir
+
                 ceQueueDict = dict(ceDict)
                 ceQueueDict.update(queueDict[queueName]["ParametersDict"])
 
@@ -73,6 +71,7 @@ def getQueuesResolved(
                     else:
                         result = ceFactory.getCE(ceName=ce, ceType=ceDict["CEType"], ceParametersDict=ceQueueDict)
                         if not result["OK"]:
+                            queueDict.pop(queueName)
                             continue
                         queueCECache.setdefault(queueName, {})
                         queueCECache[queueName]["Hash"] = queueHash
@@ -83,6 +82,8 @@ def getQueuesResolved(
                     queueDict[queueName]["CE"] = queueCE
                     result = queueDict[queueName]["CE"].isValid()
                     if not result["OK"]:
+                        queueDict.pop(queueName)
+                        queueCECache.pop(queueName)
                         continue
 
                 queueDict[queueName]["CEName"] = ce

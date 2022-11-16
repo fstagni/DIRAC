@@ -16,6 +16,7 @@ dependencies:
   - cachetools
   - certifi
   - cmreshandler >1.0.0b4
+  - db12
   - elasticsearch <7.14
   - elasticsearch-dsl
   - fts3
@@ -32,12 +33,15 @@ dependencies:
   - pyasn1-modules
   - python-json-logger >=0.1.8
   - pytz >=2015.7
+  - pyyaml
   - recommonmark
   - requests >=2.9.1
   - six >=1.10
   - sqlalchemy
   - stomp.py =4.1.23
-  - suds-jurko >=0.6
+  - suds >=0.6
+  # Workaround for suds-jurko no longer being maintained
+  - suds-jurko-compat
   - xmltodict
   - pycurl
   - voms

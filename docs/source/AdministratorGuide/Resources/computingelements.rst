@@ -99,8 +99,7 @@ of the *ComputingElement* is located in the inside the corresponding site sectio
 This is the general structure in which specific CE descriptions are inserted.
 The CE configuration is part of the general DIRAC configuration
 It can be placed in the general Configuration Service or in the local configuration of the DIRAC installation.
-
-Additional info can be found :ref:`here <resourcesComputing>`.
+Examples of the configuration can be found in the :ref:`full_configuration_example`, in the *Resources/Computing* section.
 
 Some CE parameters are confidential, e.g.
 password of the account used for the SSH tunnel access to a site. The confidential parameters
@@ -112,7 +111,10 @@ of CEs are describe in the subsections below
 
 Note that there's no absolute need to define a 1-to-1 relation between CEs and Queues in DIRAC and "in real".
 If for example you want to send, to the same queue, a mix of single processor and multiprocessor Pilots,
-you can define two queues identical but for the NumberOfProcessors parameter.
+you can define two queues identical but for the NumberOfProcessors parameter. To avoid sending single
+processor jobs to multiprocessor queues, add the ``RequiredTag=MultiProcessor`` option to a multiprocessor queue. To
+automatically create the equivalent single core queues, see the :mod:`~DIRAC.ConfigurationSystem.Agent.Bdii2CSAgent`
+configuration.
 
 
 CREAM Computing Element
@@ -141,6 +143,17 @@ A commented example follows::
        }
      }
    }
+
+
+
+Cloud Computing Element
+@@@@@@@@@@@@@@@@@@@@@@@
+The CloudComputingElement allows submission to cloud sites using libcloud
+(via the standard SiteDirector agent). The instances are contextualised using
+cloud-init. Please see :mod:`~DIRAC.Resources.Computing.CloudComputingElement`
+for setup and configuration.
+
+
 
 SSH Computing Element
 @@@@@@@@@@@@@@@@@@@@@

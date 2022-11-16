@@ -58,6 +58,7 @@ Configuration options are:
 * ``OccupancyPlugin``: default (``empty``). Plugin to find the occupancy of a given storage.
 * ``SpaceReservation``: just a name of a zone of the physical storage which can have some space reserved. Extends the SRM ``SpaceToken`` concept.
 * ``ArchiveTimeout``: for tape SE only. If set to a value in seconds, enables the `FTS Archive Monitoring feature <https://fts3-docs.web.cern.ch/fts3-docs/docs/archive_monitoring.html>`_
+* ``BringOnlineTimeout``: for tape SE only. If set to a value in seconds, specify the BringOnline parameter for FTS transfers. Otherwise, the default is whatever is in the ``FTS3Job`` class.
 
 VO specific paths
 -----------------
@@ -220,7 +221,7 @@ There are also a set of plugins based on the `gfal2 libraries <https://dmc-docs.
 Default plugin options:
 
 * ``Access``: ``Remote`` or ``Local``. If ``Local``, then this protocol can be used only if we are running at the site to which the SE is associated. Typically, if a site mounts the storage as NFS, the ``file`` protocol can be used.
-
+* InputProtocols/OutputProtocols: a given plugin normally contain a hard coded list of protocol it is able to generate or accept as input. There are however seldom cases (like SRM) where the site configuration may change these lists. These options are here to accomodate for that case.
 
 GRIDFTP Optimisation
 ^^^^^^^^^^^^^^^^^^^^
@@ -315,6 +316,11 @@ This is implemented using the same logic as described above. There is however an
 .. versionadded:: v7r1p37
     The FTS3Agent can now use plugins to influence the list of TPC protocols used. See :ref:`fts3`
 
+
+MultiHop support
+^^^^^^^^^^^^^^^^
+
+See :ref:`fts3`
 
 
 Protocol matrix

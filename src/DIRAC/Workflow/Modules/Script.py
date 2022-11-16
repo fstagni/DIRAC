@@ -15,7 +15,7 @@ import distutils.spawn  # pylint: disable=no-name-in-module,no-member,import-err
 
 from DIRAC import gLogger
 from DIRAC.Core.Utilities.Subprocess import systemCall
-
+from DIRAC.WorkloadManagementSystem.Utilities.RemoteRunner import RemoteRunner
 from DIRAC.Workflow.Modules.ModuleBase import ModuleBase
 
 
@@ -88,17 +88,23 @@ class Script(ModuleBase):
         """execute the self.command (uses systemCall)"""
         failed = False
 
-        outputDict = systemCall(
-            timeout=0,
-            cmdSeq=shlex.split(self.command),
-            env=self.environment,
-            callbackFunction=self.callbackFunction,
-            bufferLimit=self.bufferLimit,
-        )
-        if not outputDict["OK"]:
+        remoteRunner = RemoteRunner()
+        if remoteRunner.is_remote_execution():
+            retVal = remoteRunner.execute(self.command)
+        else:
+            retVal = systemCall(
+                timeout=0,
+                cmdSeq=shlex.split(self.command),
+                env=self.environment,
+                callbackFunction=self.callbackFunction,
+                bufferLimit=self.bufferLimit,
+            )
+
+        if not retVal["OK"]:
             failed = True
-            self.log.error("System call execution failed:", "\n" + str(outputDict["Message"]))
-        status, stdout, stderr = outputDict["Value"][0:3]
+            self.log.error("System call execution failed:", "\n" + str(retVal["Message"]))
+            self._exitWithError(1000)
+        status, stdout, stderr = retVal["Value"][0:3]
         if status:
             failed = True
             self.log.error("Non-zero status while executing", "%s exited with status %s" % (self.command, status))

@@ -1,3 +1,443 @@
+[v7r3p33]
+
+*Resources
+NEW: (#6526) add the ARCLogLevel option in ARC
+NEW: (#6526) add the ComputingInfoEndpoint in ARC6
+FIX: (#6526) restore a commented line in AREX._reset()
+FIX: (#6516) Support using ARC that was compiled against SWIG 4.1+
+NEW: (#6502) Added network selection to CloudCE.
+
+*DataManagementSystem
+FIX: (#6518) FileCatalogCLI: ls command: Added a missing else to avoid failing
+             silently if directory is not found as opposed to it just being an empty directory.
+
+*WorkloadManagementSystem
+FIX: (#6514) Ensure cpuNormalizationFactor is a float
+
+*docs
+FIX: (#6507) Added CloudComputingElement to AdminGuide/Resources
+
+[v7r3p32]
+
+*WorkloadManagementSystem
+NEW: (#6477) backported ElasticJobParametersDB from rel-v8r0 branch
+FIX: (#6469) reduce the PollingTime of JobAgent to 20s
+
+*Core
+FIX: (#6468) quoting the DB passwords for special characters
+
+[v7r3p31]
+
+NEW: (#6423) Information about VirtualOrganization parameter added.
+
+*WorkloadManagementSystem
+FIX: (#6422) WMSUtilities.killPilotsInQueues have a consistent return value
+
+*Core
+FIX: (#6395) Use safer mode for grid-security directories
+
+[v7r3p30]
+
+*Resources
+CHANGE: (#6372) negative free space value is transformed to 0
+
+*DataManagementSystem
+NEW: (#6371) cancel the FTS transfers when an RMS request is found to be canceled
+
+[v7r3p29]
+
+*Core
+CHANGE: (#6325) Set OpenSSL ciphers to "DEFAULT:@SECLEVEL=1"
+NEW: (#6325) Experimental support for Python 3.10
+NEW: (#6325) Suppress InsecureRequestWarning when using dirac-configure with HTTPS servers
+
+*Resources
+FIX: (#6358) new directory creation specifies the permission in octal mode
+NEW: (#6352) Add a setGfalSetting decorator
+CHANGE: (#6352) add a 30s timeout for removal at RAL
+
+*WorkloadManagementSystem
+FIX: (#6353) Stop instance from VirtualMachineMonitor
+NEW: (#6348) The default InputDataDirectory used by DownloadInputData can be overridden by
+     setting /LocalSite/InputDataDirectory
+
+[v7r3p28]
+
+*Core
+CHANGE: (#6324) Replace suds-jurko with suds
+
+*Resources
+FIX: (#6319) Forward jobDesc to innerCE in PoolCE
+FIX: (#6310) Set HOME in SingularityCE
+FIX: (#6303) Return proper error if provider value missing in CloudCE
+
+*FrameworkSystem
+FIX: (#6305) Don't notify users with expired proxies
+
+*WorkloadManagement
+FIX: (#6304) Log error if CE Platform is missing.
+
+[v7r3p27]
+
+*ConfigurationSystem
+CHANGE: (#6284) Make GOCDB2CSAgent functionMap less private
+
+[v7r3p26]
+
+*Resources
+FIX: (#6274) Conditional FC ProxyPlugin checks the ThreadConfig
+
+*DataManagementSystem
+FIX: (#6266) Fix FC change{group,owner,mode} for multiple LFNs
+
+[v7r3p25]
+
+*DataManagementSystem
+FIX: (#6266) Fix FC change{group,owner,mode} for multiple LFNs
+FIX: (#6238) DatasetManager: bug fix in getDatasetsInDirectory() method
+
+*WorkloadManagement
+NEW: (#6252) ContainerBind option can be set on the per-site and per-CE level
+FIX: (#6236) Fix Platform key error in SD when CheckPlatform=True
+
+*FrameworkSystem
+NEW: (#6237) Add StdoutJsonBackend logger backend
+
+*Resources
+FIX: (#6235) remove REST information from the ARC6 pilot job references to bind them with jobs
+FIX: (#6221) dirac_resource_info - restored the SE lookup logic
+
+*Core
+FIX: (#6225) Increase VOMS command timeout
+
+*Interfaces
+CHANGE: (#6224) Make tmpdir for local cache instead of using CWD directly when replicating
+
+[v7r3p24]
+
+*Resources
+FIX: (#6217) ARCCE.getARCJob() becomes protected
+FIX: (#6213) ARC6 typo issues
+FIX: (#6213) ARC writeXRSL becomes protected
+NEW: (#6199) Adapt MQConnector to stomp 8
+
+*DataManagementSystem
+FIX: (#6207) Built-in metakeys were incorrectly modified in a MultiVO environment. This fix keeps them intact while modifying user-supplied metadata names by append a VO suffix, as before.
+
+*ResourceStatusSystem
+FIX: (#6191) convert ComputingElement to CE before searching in the configuration
+
+[v7r3p23]
+
+*CI
+NEW: (#6187) max open files for dirac CI container to 8192
+
+*WorkloadManagementSystem
+CHANGE: (#6183) new method to submit pilots from ARC
+FIX: (#6133) use the JobMonitoringClient to check for job parameters (that can be in the ES backend)
+FIX: (#6101) Avoid producing massive log output in OptimizationMind
+
+*Core
+FIX: (#6155) Replaced old vomses/vomsdir code to be able to handle cvmfs vomses. See #6150
+FIX: (#6123) fix error reporting in TornadoService
+FIX: (#6118) don't truncate first character in cli doc strings
+
+*RequestManagementSystem
+NEW: (#6148) Add option to automatically cancel Scheduled requests after a defined time period.
+     Default behaviour unchanged. Relates to #6136
+
+*Resources/Cloud
+
+FIX: (#6145) userData need to be in "ascii" string format to meet the requirement of "create_node"
+     when creating VMs from cloud resources
+
+*DataManagementSystem
+NEW: (#6113) Introduces an option 'ForceIndexedMetadata' to disable the creation of unindexed metadata.
+     Default: False, i.e. preserves the current default where both indexed and unindexed metadata are allowed.
+     Relates to #6029.
+
+*Resources
+FIX: (#6105) Error in the condition to get FlavorName
+FIX: (#6100) use identity instead of subject of proxy in CloudCE
+
+*docs
+NEW: (#6090) add info on installing non-released code from within the pilot
+
+[v7r3p22]
+
+*Resources
+FIX: (#6082) autodetect cvmfs proxy in default cloudce template
+FIX: (#6079) use ceType instead of ceName for CE parameters
+FIX: (#6073) ARCCE  make ldapsearch call forward compatible with newer ldapsearch versions
+
+*Core
+FIX: (#6073) Grid: BDII make ldapsearch call forward compatible with newer ldapsearch versions
+
+*Elasticsearch
+NEW: (#6067) option op_type in index API for Elasticsearch
+
+[v7r3p21]
+
+*Resources
+FIX: (#6059) use ceType instead of ceName for CE parameters
+FIX: (#6051) string format for future in PoolCE
+FIX: (#6013) HTCondorCE: make sure proxy is available when running condor_rm
+NEW: (#5988) add CloudComputingElement
+
+*WorkloadManagementSystem
+
+FIX: (#6054) DIRACBenchmark client TypeError
+FIX: (#6049) In case of a pilot version not matching the production version, the JobAgent expects the error
+     message to contain the words "Pilot version does not match", so the error message was updated accordingly.
+FIX: (#6045) Don't crash if systemCall fails
+FIX: (#6032) utf-8 support in job output for python2
+CHANGE: (#5988) add hook for pilot cleanup
+FIX: (#5979) StalledJobAgent can force status from Submitting to Failed
+FIX: (#5979) ElasticJobParametersDB: make sure the docID is less than 512 characters
+FIX: (#5946) escape time stamp in setHeartBeatData
+
+*RequestManagementSystem
+FIX: (#6020) if the request ID is an integer the test `is digit()` throws an exception
+
+*Core
+FIX: (#6011) Allow rootPath to be overridden with DIRAC_ROOT_PATH  environment variable
+
+*docs
+FIX: (#6010) Added (renewed) jobs and pilot State Machines drawings
+
+*DataManagementSystem
+NEW: (#6008) BringOnline setting for FTS transfers can be SE dependant
+
+[v7r3p20]
+
+FIX: (#5977) allow to run Watchdog on non x86 platforms
+
+*Core
+FIX: (#5975) Limit reoccurrences of subprocess unicode error
+FIX: (#5957) fix: allow for agents to loop every 10 seconds
+FIX: (#5948) Revert "moved initialization of monitoring after agent initialize()"
+
+*WorkloadManagementSystem
+
+FIX: (#5972) update PoolCE.InnerCESubmissionType from JobAgent
+FIX: (#5962) Stop fetching jobs when no more slot available in the inner PoolCE
+FIX: (#5962) Make sure dirac-jobexec does not use the server certificate to execute the workflow
+FIX: (#5957) can't change the polling time of JobAgent from inside an already running agent
+FIX: (#5946) escape time stamp in setHeartBeatData
+
+*DataManagementSystem
+
+FIX: (#5967) fix a race condition when running multiple FTS3Agents in parallel
+CHANGE: (#5924) DFC dump feature can dump more than one SE at the same time
+
+*RequestManagementSystem
+
+FIX: (#5953) dirac-rms-request takes into account PEP-515
+FIX: (#5947) fix variable referenced before assignment in RequestTask
+FIX: (#5947) take into account that targetSEList can be empty in the operations
+
+*WorkloadManagement
+CHANGE: (#5939) dirac-wms-get-cpu-normalization depends on db12 multiple_dirac_benchmark
+
+*docs
+FIX: (#5928) added better docs for JobShare and priorities
+
+[v7r3p19]
+
+*RequestManagementSystem
+FIX: (#5929) filter by SourceSE in ReplicateAndRegister preparation
+FIX: (#5929) Change RMS.Operation sourceSEList and targetSEList default to empty list
+
+*Resources
+FIX: (#5921) File protocol listDirectory returns metadata
+CHANGE: (#5918) GFAL2_StorageBase redefine ECOMM if it does not exist
+
+*WorkloadManagementSystem
+FIX: (#5910) using a DErrno for no match found
+FIX: (#5906) Matcher: fixed parsing of (required) tags
+
+[v7r3p18]
+
+*Core
+CHANGE: (#5887) Use importlib.metadata rather than __RCSID__ for getting AgentModule version
+CHANGE: (#5869) Show callstack in service logs when returning S_ERROR
+
+*WorkloadManagementSystem
+NEW: (#5884) Added Account option for SLURM
+CHANGE: (#5850) HeartBeatTime is set every time a status is changed by the job itself
+
+*Accounting
+CHANGE: (#5871) decrease some logs verbosity
+
+*ResourceStatusSystem
+FIX: (#5863) return S_OK/S_ERROR in PublisherHandler.getSite
+
+*WorkloadManagement
+FIX: (#5859) add proxy in PushJobAgent and enhance it
+
+*docs
+CHANGE: (#5859) add more details about the PushJobAgent configuration
+NEW: (#5852) Added general service configuration options description including Authorization options
+FIX: (#5851) update DFC components description
+CHANGE: (#5847) moved docs of ComputingElement from ConfReference to dirac.cfg
+
+*DataManagementSystem
+FIX: (#5853) FileCatalogCLI - removed faulty evaluation of undefined option to the rebuild command. Fixes #5759
+
+[v7r3p17]
+
+*WorkloadManagementSystem
+CHANGE: (#5843) added Modules and PipInstallOptions to SiteDirector/Pilot option
+FIX: (#5841) WMS DBs: do not try to decode when it's not bytes
+
+*ConfigurationSystem
+FIX: (#5839) VOMS2CSAgent correctly takes into account multiple CAs for users with multiple DNs
+
+[v7r3p16]
+
+*Core
+CHANGE: (#5831) JEncode bytes, tests
+FIX: (#5808) do not allow arbitrary code execution in JEncode
+
+*ConfigurationSystem
+CHANGE: (#5831) align with JEncode changes
+
+*WorkloadManagementSystem
+FIX: (#5815) Allow transition Rescheduled->Failed
+FIX: (#5719) better use the job state machine when setting the job status, in particular when it comes from failover requests that may be inserted between 2 successful updates.
+
+*Interface
+FIX: (#5814) send only single jobID to checkJobStateTransition
+
+*WorkloadManagement
+CHANGE: (#5813) enable logs from db12 in dirac-wms-cpu-normalization
+
+*DataManagementSystem
+FIX: (#5790) Fix pickle error in dirac-dms-directory-sync
+
+*TransformationSystem
+Fix: Restore task state "Scheduled"
+
+*docs
+CHANGE: (#5812) add further details about the server installation process with python3
+
+*FrameworkSystem
+CHANGE: (#5760) added a flag for disabling the use of SecurityLogging service
+
+[v7r3p15]
+
+CHANGE: (#5761) use Client instead of RPCClient
+
+*Resources
+NEW: (#5755) allow to overwrite input/output  storage plugin parameter with the CS
+CHANGE: (#5755) add "xroot" to the list of input protocol for the XROOT plugin
+CHANGE: (#5716) SingularityComputingElement: install python3 version
+
+*Transformation
+FIX: (#5753) dirac_production_runjoblocal.py: moved to py3 Pilot install
+
+*Interfaces
+CHANGE: (#5752) DIRAC APIs check if a JobState transition is allowed
+
+*WorkloadManagementSystem
+FIX: (#5749) JobSanity doesn't handle input sanboxes named "LFN:"
+FIX: (#5745) convert inputs from tuple to list in JobAgent before submitting to a CE
+FIX: (#5744) allow Stalled, Running and Matched jobs to go to Reschedule
+FIX: (#5744) JobAgent forces the reschedule of jobs in case of exceptions
+
+*HTTPS
+FIX: (#5741) Replace DIRAC.Core.DISET.TransferClient with DIRAC.Core.Tornado.Client.ClientSelector
+
+[v7r3p14]
+
+*WorkloadManagementSystem
+
+FIX: (#5732) securityLogging: zip after 1 day
+NEW: (#5330) PushJobAgent to prepare jobs for sites with no external connectivity
+NEW: (#5330) RemoteRunner to execute applications remotely (submitting them to remote CE)
+
+*FrameworkSystem
+FIX: (#5729) Get Tornado's port from the CS when adding URLs
+
+*ResourceStatusSystem
+FIX: (#5708) CSHelpers: some sites have no resources
+
+*Resources
+CHANGE: (#5330) add inputs and outputs parameters in ARC.submitJob()
+
+*Workflow
+CHANGE: (#5330) integrate RemoteRunner
+
+[v7r3p13]
+
+*WorkloadManagementSystem
+FIX: (#5721) ElasticJobParametersDB: get in output all entries
+CHANGE: (#5707) Replace DB12.py with the db12 package
+CHANGE: (#5705) JobAgent and JobWrapper: only reporting changes on major status when needed
+
+*Core
+FIX: (#5720) TornadoBaseClientcorrectly checks CA
+FIX: (#5715) encodeDict when the dict keys have mixed types
+
+*HTTPS
+FIX: (#5718) Add URLs to CS when installing HTTPS services
+
+*ConfigurationSystem
+FIX: (#5700) fix an exception in the VOMS2CSAgent when a user joins a second VO
+
+[v7r3p12]
+
+*ConfigurationSystem
+CHANGE: (#5680) Bdii2CSAgent: add InjectSingleCoreQueue option to automatically create single core equivalents for MutliCore Queues , kind of fixes #5582
+CHANGE: (#5680) Bdii2CSAgent: CEs in the BannedCEs list are no longer updated by the agent, previously this list only concerned CEs that are not already in the Configuration, fixes  #5224
+CHANGE: (#5680) dirac-admin-add-resources: add --onecore option to automatically create single core equivalents for MutliCore Queues
+FIX: (#5680) dirac-admin-add-resources: fix the query about adding new CEs, this can now be answered in the negative
+
+*Core
+FIX: (#5655) DIRAC.isPy3VersionNumber always returns True
+FIX: (#5653) Tasks never get removed from the ExecutorState if an UnrecoverableTaskException is raised
+
+*Resources
+FIX: (#5669) decode the http response in WLCGAccountingHTTPJson
+
+*TransformationSystem
+FIX: (#5661) fix RequestTasks flaky tests
+
+*WorkloadManagement
+FIX: (#5659) Python 3 support in SSHComputingElement
+
+*RMS
+FIX: (#5650) If a job was Killed, set it Killed at request completion
+
+*DataManagementSystem
+FIX: (#5649) dirac-dms-directory-sync: The script will now try all files and not end
+     a thread if one of the files assigned to be uploaded or downloaded to a thread fails.
+     The script will also print out all failed files, and their error at the end of a thread.
+     A few log messages have been corrected as well.
+
+*FrameworkSystem
+FIX: (#5622) SystemAdministratorCLI: get DIRAC version from Extensions
+
+[v7r3p11]
+
+*Resources
+CHANGE: (#5646) ParallelLibrary: Embed the executable in the srun wrapper
+
+*WorkloadManagement
+FIX: (#5639) Bad error handling in OptimizationMindHandler.exec_taskError
+
+*FrameworkSystem
+CHANGE: (#5636) proxy expiration emails are sent from an address taken from
+        the Service/Agent config instead of the DB
+
+*ResourceStatusSystem
+FIX: (#5631) specifying the gocDB type for known types
+
+*TransformationSystem
+FIX: (#5628) TransformationCleaningAgent 'deletes', do not 'remove' jobs
+NEW: (#5547) Allow MultiOperation body to fetch values from the task dict
+NEW: (#5547) Introduce Body Plugins for DMS transformations
+
 [v7r3p10]
 
 *TransformationSystem

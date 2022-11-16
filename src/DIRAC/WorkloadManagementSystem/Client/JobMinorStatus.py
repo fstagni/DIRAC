@@ -38,6 +38,8 @@ PILOT_AGENT_SUBMISSION = "Pilot Agent Submission"
 #
 PENDING_REQUESTS = "Pending Requests"
 #
+REQUESTS_DONE = "Requests done"
+#
 JOB_EXCEEDED_CPU = "Job has reached the CPU limit of the queue"
 #
 JOB_EXCEEDED_WALL_CLOCK = "Job has exceeded maximum wall clock time"
@@ -49,6 +51,8 @@ JOB_INSUFFICIENT_DISK = "Job has insufficient disk space to continue"
 JOB_WRAPPER_INITIALIZATION = "Job Wrapper Initialization"
 #
 JOB_WRAPPER_EXECUTION = "JobWrapper execution"
+#
+MARKED_FOR_TERMINATION = "Marked for termination"
 #
 RECEIVED_KILL_SIGNAL = "Received Kill signal"
 #

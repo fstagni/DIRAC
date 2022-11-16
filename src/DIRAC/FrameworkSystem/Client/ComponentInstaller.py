@@ -876,12 +876,26 @@ class ComponentInstaller(object):
         # Add the service URL
         if componentType == "service":
             port = compCfg.getOption("Port", 0)
-            if port and self.host:
+            protocol = compCfg.getOption("Protocol", "dips")
+            if (port or protocol == "https") and self.host:
                 urlsPath = cfgPath("Systems", system, compInstance, "URLs")
                 cfg.createNewSection(urlsPath)
                 failoverUrlsPath = cfgPath("Systems", system, compInstance, "FailoverURLs")
                 cfg.createNewSection(failoverUrlsPath)
-                cfg.setOption(cfgPath(urlsPath, component), "dips://%s:%d/%s/%s" % (self.host, port, system, component))
+                if protocol == "https":
+                    tornadoPort = gConfig.getValue(
+                        "/Systems/Tornado/%s/Port" % PathFinder.getSystemInstance("Tornado"),
+                        8443,
+                    )
+                    cfg.setOption(
+                        # Strip "Tornado" from the beginning of component name if present
+                        cfgPath(urlsPath, component[len("Tornado") if component.startswith("Tornado") else 0 :]),
+                        "https://%s:%s/%s/%s" % (self.host, tornadoPort, system, component),
+                    )
+                else:
+                    cfg.setOption(
+                        cfgPath(urlsPath, component), "dips://%s:%d/%s/%s" % (self.host, port, system, component)
+                    )
 
         return S_OK(cfg)
 

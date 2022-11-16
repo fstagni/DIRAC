@@ -39,6 +39,7 @@ from DIRAC.Core.Utilities.Decorators import deprecated
 from DIRAC.ResourceStatusSystem.Client.SiteStatus import SiteStatus
 from DIRAC.WorkloadManagementSystem.Client.JobState.JobManifest import JobManifest
 from DIRAC.WorkloadManagementSystem.Client import JobStatus
+from DIRAC.WorkloadManagementSystem.Client.JobMonitoringClient import JobMonitoringClient
 
 #############################################################################
 # utility functions
@@ -195,7 +196,11 @@ class JobDB(DB):
             if result["OK"]:
                 if result["Value"]:
                     for res_jobID, res_name, res_value in result["Value"]:
-                        resultDict.setdefault(int(res_jobID), {})[res_name] = res_value.decode(errors="replace")
+                        try:
+                            res_value = res_value.decode(errors="replace")  # account for use of BLOBs
+                        except AttributeError:
+                            pass
+                        resultDict.setdefault(int(res_jobID), {})[res_name] = res_value
 
                 return S_OK(resultDict)  # there's a slim chance that this is an empty dictionary
             else:
@@ -207,7 +212,11 @@ class JobDB(DB):
                 return result
 
             for res_jobID, res_name, res_value in result["Value"]:
-                resultDict.setdefault(int(res_jobID), {})[res_name] = res_value.decode(errors="replace")
+                try:
+                    res_value = res_value.decode(errors="replace")  # account for use of BLOBs
+                except AttributeError:
+                    pass
+                resultDict.setdefault(int(res_jobID), {})[res_name] = res_value
 
             return S_OK(resultDict)  # there's a slim chance that this is an empty dictionary
 
@@ -246,7 +255,11 @@ class JobDB(DB):
         if result["OK"]:
             if result["Value"]:
                 for name, value, counter in result["Value"]:
-                    resultDict.setdefault(counter, {})[name] = value.decode()
+                    try:
+                        value = value.decode()  # account for use of BLOBs
+                    except AttributeError:
+                        pass
+                    resultDict.setdefault(counter, {})[name] = value
 
             return S_OK(resultDict)
         else:
@@ -397,7 +410,11 @@ class JobDB(DB):
         result = self._query(cmd)
         if not result["OK"]:
             return S_ERROR("JobDB.getJobOptParameters: failed to retrieve parameters")
-        return S_OK({name: value.decode() for name, value in result.get("Value", {})})
+        try:
+            jobOptParameters = {name: value.decode() for name, value in result.get("Value", {})}  # account for BLOBs
+        except AttributeError:
+            jobOptParameters = {name: value for name, value in result.get("Value", {})}
+        return S_OK(jobOptParameters)
 
     #############################################################################
 
@@ -658,7 +675,7 @@ class JobDB(DB):
                     return res
                 nextState = res["Value"]
 
-                # If the JobsStateMachine does not accept the candidate, add it to separate dictionary
+                # The JobsStateMachine might force a different status
                 if candidateStatus != nextState:
                     self.log.error(
                         "Job Status Error",
@@ -1357,7 +1374,7 @@ class JobDB(DB):
         jobAttrValues.append(rescheduleCounter)
 
         # Save the job parameters for later debugging
-        result = self.getJobParameters(jobID)
+        result = JobMonitoringClient().getJobParameters(jobID)
         if result["OK"]:
             parDict = result["Value"]
             for key, value in parDict.get(jobID, {}).items():
@@ -1580,6 +1597,11 @@ class JobDB(DB):
         siteDict = {}
         if result["OK"]:
             for site, status, lastUpdateTime, author, comment in result["Value"]:
+                try:
+                    # TODO: This is only needed in DIRAC v8.0.x while moving from BLOB -> TEXT
+                    comment = comment.decode()
+                except AttributeError:
+                    pass
                 siteDict[site] = status, lastUpdateTime, author, comment
 
         return S_OK(siteDict)
@@ -1705,12 +1727,22 @@ class JobDB(DB):
                 if resSite["OK"]:
                     if resSite["Value"]:
                         site, status, lastUpdate, author, comment = resSite["Value"][0]
+                        try:
+                            # TODO: This is only needed in DIRAC v8.0.x while moving from BLOB -> TEXT
+                            comment = comment.decode()
+                        except AttributeError:
+                            pass
                         resultDict[site] = [[status, str(lastUpdate), author, comment]]
                     else:
                         resultDict[site] = [["Unknown", "", "", "Site not present in logging table"]]
 
         for row in result["Value"]:
             site, status, utime, author, comment = row
+            try:
+                # TODO: This is only needed in DIRAC v8.0.x while moving from BLOB -> TEXT
+                comment = comment.decode()
+            except AttributeError:
+                pass
             if site not in resultDict:
                 resultDict[site] = []
             resultDict[site].append([status, str(utime), author, comment])
@@ -1933,14 +1965,26 @@ class JobDB(DB):
             return ret
         e_jobID = ret["Value"]
 
-        req = "UPDATE Jobs SET HeartBeatTime=UTC_TIMESTAMP(), Status='%s' WHERE JobID=%s" % (JobStatus.RUNNING, e_jobID)
+        # If HeartBeatTime is being set, set it...
+        timeStamp = dynamicDataDict.pop("HeartBeatTime", None)
+        if timeStamp:
+            result = self._escapeString(timeStamp)
+            if not result["OK"]:
+                self.log.warn("Failed to escape string ", timeStamp)
+                return result
+            req = "UPDATE Jobs SET HeartBeatTime=%s WHERE JobID=%s" % (result["Value"], e_jobID)
+        else:
+            req = "UPDATE Jobs SET HeartBeatTime=UTC_TIMESTAMP(), Status='%s' WHERE JobID=%s" % (
+                JobStatus.RUNNING,
+                e_jobID,
+            )
+
         result = self._update(req)
         if not result["OK"]:
             return S_ERROR("Failed to set the heart beat time: " + result["Message"])
 
         ok = True
         # Add dynamic data to the job heart beat log
-        # start = time.time()
         valueList = []
         for key, value in dynamicDataDict.items():
             result = self._escapeString(key)
@@ -1963,11 +2007,9 @@ class JobDB(DB):
             result = self._update(req)
             if not result["OK"]:
                 ok = False
-                self.log.warn(result["Message"])
+                self.log.warn("Error storing heart beat data", result["Message"])
 
-        if ok:
-            return S_OK()
-        return S_ERROR("Failed to store some or all the parameters")
+        return S_OK() if ok else S_ERROR("Failed to store some or all the parameters")
 
     #####################################################################################
     def getHeartBeatData(self, jobID):
@@ -2023,7 +2065,7 @@ class JobDB(DB):
         return self._update(req)
 
     #####################################################################################
-    def getJobCommand(self, jobID, status="Received"):
+    def getJobCommand(self, jobID, status=JobStatus.RECEIVED):
         """Get a command to be passed to the job together with the
         next heart beat
         """

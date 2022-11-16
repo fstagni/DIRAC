@@ -13,6 +13,7 @@ import six
 
 from datetime import datetime
 from datetime import timedelta
+from six.moves.urllib import parse as urlparse
 
 import certifi
 import copy
@@ -129,6 +130,7 @@ class ElasticSearchDB(object):
         self._connected = False
         if user and password:
             sLog.debug("Specified username and password")
+            password = urlparse.quote_plus(password)
             if port:
                 self.__url = "https://%s:%s@%s:%d" % (user, password, host, port)
             else:
@@ -213,18 +215,18 @@ class ElasticSearchDB(object):
             return S_ERROR(re)
 
     @ifConnected
-    def update(self, index, query=None, updateByQuery=True, id=None):
+    def update(self, index, query=None, updateByQuery=True, docID=None):
         """Executes an update of a document, and returns S_OK/S_ERROR
 
         :param self: self reference
         :param str index: index name
         :param dict query: It is the query in ElasticSearch DSL language
         :param bool updateByQuery: A bool to determine update by query or index values using index function.
-        :param int id: ID for the document to be created.
+        :param int docID: ID for the document to be created.
 
         """
 
-        sLog.debug("Updating %s with %s, updateByQuery=%s, id=%s" % (index, query, updateByQuery, id))
+        sLog.debug("Updating %s with %s, updateByQuery=%s, docID=%s" % (index, query, updateByQuery, docID))
 
         if not index or not query:
             return S_ERROR("Missing index or query")
@@ -233,10 +235,64 @@ class ElasticSearchDB(object):
             if updateByQuery:
                 esDSLQueryResult = self.client.update_by_query(index=index, body=query)
             else:
-                esDSLQueryResult = self.client.index(index=index, doc_type="_doc", body=query, id=id)
+                esDSLQueryResult = self.client.index(index=index, doc_type="_doc", body=query, id=docID)
             return S_OK(esDSLQueryResult)
         except RequestError as re:
             return S_ERROR(re)
+
+    @ifConnected
+    def getDoc(self, index, docID):
+        """Retrieves a document in an index.
+
+        :param index: name of the index
+        :param docID: document ID
+        """
+        sLog.debug("Retrieving document %s in index %s" % (docID, index))
+        try:
+            return S_OK(self.client.get(index=index, doc_type="_doc", id=docID)["_source"])
+        except NotFoundError:
+            sLog.warn("Could not find the document in index", index)
+            return S_OK({})
+        except RequestError as re:
+            return S_ERROR(re)
+
+    @ifConnected
+    def updateDoc(self, index, docID, body):
+        """Update an existing document with a script or partial document
+
+        :param index: name of the index
+        :param docID: document ID
+        :param body: The request definition requires either `script` or
+            partial `doc`
+        """
+        sLog.debug("Updating document %s in index %s" % (docID, index))
+        try:
+            return S_OK(self.client.update(index=index, doc_type="_doc", id=docID, body=body))
+        except RequestError as re:
+            return S_ERROR(re)
+
+    @ifConnected
+    def deleteDoc(self, index, docID):
+        """Deletes a document in an index.
+
+        :param index: name of the index
+        :param docID: document ID
+        """
+        sLog.debug("Deleting document %s in index %s" % (docID, index))
+        try:
+            return S_OK(self.client.delete(index=index, doc_type="_doc", id=docID))
+        except RequestError as re:
+            return S_ERROR(re)
+
+    @ifConnected
+    def existsDoc(self, index, docID):
+        """Returns information about whether a document exists in an index.
+
+        :param index: name of the index
+        :param docID: document ID
+        """
+        sLog.debug("Checking if document %s in index %s exists" % (docID, index))
+        return self.client.exists(index=index, doc_type="_doc", id=docID)
 
     @ifConnected
     def _Search(self, indexname):
@@ -325,7 +381,7 @@ class ElasticSearchDB(object):
     @ifConnected
     def createIndex(self, indexPrefix, mapping=None, period="day"):
         """
-        :param str indexPrefix: it is the index name.
+        :param str indexPrefix: it is the index name
         :param dict mapping: the configuration of the index.
         :param str period: We can specify, which kind of index will be created.
                            Currently only daily and monthly indexes are supported.
@@ -355,7 +411,7 @@ class ElasticSearchDB(object):
             sLog.error("Can not create the index:", repr(e))
             return S_ERROR("Can not create the index")
 
-    @ifConnected
+    @ifConnected  # pylint: disable=no-member
     def deleteIndex(self, indexName):
         """
         :param str indexName: the name of the index to be deleted...
@@ -365,7 +421,7 @@ class ElasticSearchDB(object):
             retVal = self.client.indices.delete(indexName)
         except NotFoundError:
             sLog.warn("Index does not exist", indexName)
-            return S_OK("Noting to delete")
+            return S_OK("Nothing to delete")
         except ValueError as e:
             return S_ERROR(DErrno.EVALUE, e)
 
@@ -376,11 +432,12 @@ class ElasticSearchDB(object):
 
         return S_ERROR(retVal)
 
-    def index(self, indexName, body=None, docID=None):
+    def index(self, indexName, body=None, docID=None, op_type="index"):
         """
         :param str indexName: the name of the index to be used
         :param dict body: the data which will be indexed (basically the JSON)
         :param int id: optional document id
+        :param str op_type: Explicit operation type. (options: 'index' (default) or 'create')
         :return: the index name in case of success.
         """
 
@@ -390,7 +447,7 @@ class ElasticSearchDB(object):
             return S_ERROR("Missing index or body")
 
         try:
-            res = self.client.index(index=indexName, doc_type="_doc", body=body, id=docID)
+            res = self.client.index(index=indexName, doc_type="_doc", body=body, id=docID, params={"op_type": op_type})
         except (RequestError, TransportError) as e:
             sLog.exception()
             return S_ERROR(e)

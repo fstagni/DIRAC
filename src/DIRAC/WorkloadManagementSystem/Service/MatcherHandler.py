@@ -15,6 +15,7 @@ from DIRAC import S_OK, S_ERROR
 
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
+from DIRAC.Core.Utilities import DErrno
 from DIRAC.Core.Utilities.DEncode import ignoreEncodeWarning
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 
@@ -88,15 +89,14 @@ class MatcherHandlerMixin(object):
             return S_ERROR("Error requesting job")
         except PilotVersionError as pve:
             self.log.warn("Pilot version error for pilot", "[%s] %s" % (pilotRef, pve))
-            return S_ERROR("Error requesting job")
+            return S_ERROR(DErrno.EWMSPLTVER, callStack=[])
 
         # result can be empty, meaning that no job matched
         if result:
             gMonitor.addMark("matchesDone")
             gMonitor.addMark("matchesOK")
             return S_OK(result)
-        # FIXME: This is correctly interpreted by the JobAgent, but DErrno should be used instead
-        return S_ERROR("No match found")
+        return S_ERROR(DErrno.EWMSNOMATCH, callStack=[])
 
     ##############################################################################
     types_getActiveTaskQueues = []

@@ -35,7 +35,8 @@ services:
       - 9090
       - 9191
     environment:
-      - initialBuckets=myFirstBucket
+      - initialBuckets=my-first-bucket
+      - debug=true
 
   dirac-server:
     image: ${CI_REGISTRY_IMAGE}/${HOST_OS}-dirac
@@ -47,6 +48,8 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+    ulimits:
+      nofile: 8192
 
   dirac-client:
     image: ${CI_REGISTRY_IMAGE}/${HOST_OS}-dirac
@@ -55,3 +58,5 @@ services:
     user: "${DIRAC_UID}:${DIRAC_GID}"
     depends_on:
       - dirac-server
+    ulimits:
+      nofile: 8192

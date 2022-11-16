@@ -3,8 +3,7 @@
 
 **Configuration Parameters**
 
-Configuration for the ARCComputingElement submission can be done via the configuration system. See the page about
-configuring :ref:`resourcesComputing` for where the options can be placed.
+Configuration for the ARCComputingElement submission can be done via the configuration system.
 
 XRSLExtraString:
    Default additional string for ARC submit files. Should be written in the following format::
@@ -31,6 +30,9 @@ EndpointType:
    Emies is another protocol that allows to interact with A-REX services that provide additional features
    (support of OIDC tokens).
 
+Preamble:
+   Line that should be executed just before the executable file.
+
 **Code Documentation**
 """
 from __future__ import absolute_import
@@ -42,6 +44,7 @@ __RCSID__ = "$Id$"
 import six
 import os
 import stat
+import sys
 
 import arc  # Has to work if this module is called #pylint: disable=import-error
 from DIRAC import S_OK, S_ERROR, gConfig
@@ -51,16 +54,10 @@ from DIRAC.Core.Utilities.File import makeGuid
 from DIRAC.Core.Utilities.List import breakListIntoChunks
 from DIRAC.Core.Security.ProxyInfo import getVOfromProxyGroup
 from DIRAC.Resources.Computing.ComputingElement import ComputingElement
+from DIRAC.Resources.Computing.PilotBundle import writeScript
 from DIRAC.WorkloadManagementSystem.Client import PilotStatus
 
-# Uncomment the following 5 lines for getting verbose ARC api output (debugging)
-# import sys
-# logstdout = arc.LogStream(sys.stdout)
-# logstdout.setFormat(arc.ShortFormat)
-# arc.Logger_getRootLogger().addDestination(logstdout)
-# arc.Logger_getRootLogger().setThreshold(arc.VERBOSE)
 
-CE_NAME = "ARC"
 MANDATORY_PARAMETERS = ["Queue"]  # Mandatory for ARC CEs in GLUE2?
 STATES_MAP = {
     "Accepted": PilotStatus.WAITING,
@@ -81,12 +78,13 @@ STATES_MAP = {
 
 class ARCComputingElement(ComputingElement):
 
+    _arcLevels = ["DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"]
+
     #############################################################################
     def __init__(self, ceUniqueID):
         """Standard constructor."""
         super(ARCComputingElement, self).__init__(ceUniqueID)
 
-        self.ceType = CE_NAME
         self.submittedJobs = 0
         self.mandatoryParameters = MANDATORY_PARAMETERS
         self.pilotProxy = ""
@@ -95,27 +93,21 @@ class ARCComputingElement(ComputingElement):
         self.ceHost = self.ceName
         self.endpointType = "Gridftp"
         self.usercfg = arc.common.UserConfig()
+        self.preamble = ""
+
         # set the timeout to the default 20 seconds in case the UserConfig constructor did not
         self.usercfg.Timeout(20)  # pylint: disable=pointless-statement
-        self.ceHost = self.ceParameters.get("Host", self.ceName)
-        self.gridEnv = self.ceParameters.get("GridEnv", self.gridEnv)
-
-        # ARC endpoint types (Gridftp, Emies)
-        endpointType = self.ceParameters.get("EndpointType", self.endpointType)
-        if endpointType not in ["Gridftp", "Emies"]:
-            self.log.warn("Unknown ARC endpoint, change to default", self.endpointType)
-        else:
-            self.endpointType = endpointType
+        self.gridEnv = ""
 
         # Used in getJobStatus
         self.mapStates = STATES_MAP
-        # Do these after all other initialisations, in case something barks
-        self.xrslExtraString = self.__getXRSLExtraString()
-        self.xrslMPExtraString = self.__getXRSLExtraString(multiprocessor=True)
+        # Extra XRSL info
+        self.xrslExtraString = ""
+        self.xrslMPExtraString = ""
 
     #############################################################################
 
-    def __getARCJob(self, jobID):
+    def _getARCJob(self, jobID):
         """Create an ARC Job with all the needed / possible parameters defined.
         By the time we come here, the environment variable X509_USER_PROXY should already be set
         """
@@ -148,59 +140,6 @@ class ARCComputingElement(ComputingElement):
         j.PrepareHandler(self.usercfg)
         return j
 
-    def __getXRSLExtraString(self, multiprocessor=False):
-        # For the XRSL additional string from configuration - only done at initialisation time
-        # If this string changes, the corresponding (ARC) site directors have to be restarted
-        #
-        # Variable = XRSLExtraString (or XRSLMPExtraString for multi processor mode)
-        # Default value = ''
-        #   If you give a value, I think it should be of the form
-        #          (aaa = "xxx")
-        #   Otherwise the ARC job description parser will have a fit
-        # Locations searched in order :
-        # Top priority    : Resources/Sites/<Grid>/<Site>/CEs/<CE>/XRSLExtraString
-        # Second priority : Resources/Sites/<Grid>/<Site>/XRSLExtraString
-        # Default         : Resources/Computing/CEDefaults/XRSLExtraString
-        #
-        xrslExtraString = ""  # Start with the default value
-        result = getCESiteMapping(self.ceHost)
-        if not result["OK"] or not result["Value"]:
-            self.log.error("Unknown CE ...")
-            return
-        self.site = result["Value"][self.ceHost]
-        # Now we know the site. Get the grid
-        grid = self.site.split(".")[0]
-        # The different possibilities that we have agreed upon
-        if multiprocessor:
-            xtraVariable = "XRSLMPExtraString"
-        else:
-            xtraVariable = "XRSLExtraString"
-        firstOption = "Resources/Sites/%s/%s/CEs/%s/%s" % (grid, self.site, self.ceHost, xtraVariable)
-        secondOption = "Resources/Sites/%s/%s/%s" % (grid, self.site, xtraVariable)
-        defaultOption = "Resources/Computing/CEDefaults/%s" % xtraVariable
-        # Now go about getting the string in the agreed order
-        self.log.debug("Trying to get %s : first option %s" % (xtraVariable, firstOption))
-        result = gConfig.getValue(firstOption, defaultValue="")
-        if result != "":
-            xrslExtraString = result
-            self.log.debug("Found %s : %s" % (xtraVariable, xrslExtraString))
-        else:
-            self.log.debug("Trying to get %s : second option %s" % (xtraVariable, secondOption))
-            result = gConfig.getValue(secondOption, defaultValue="")
-            if result != "":
-                xrslExtraString = result
-                self.log.debug("Found %s : %s" % (xtraVariable, xrslExtraString))
-            else:
-                self.log.debug("Trying to get %s : default option %s" % (xtraVariable, defaultOption))
-                result = gConfig.getValue(defaultOption, defaultValue="")
-                if result != "":
-                    xrslExtraString = result
-                    self.log.debug("Found %s : %s" % (xtraVariable, xrslExtraString))
-        if xrslExtraString:
-            self.log.always("%s : %s" % (xtraVariable, xrslExtraString))
-            self.log.always(" --- to be added to pilots going to CE : %s" % self.ceHost)
-        return xrslExtraString
-
     #############################################################################
     def _addCEConfigDefaults(self):
         """Method to make sure all necessary Configuration Parameters are defined"""
@@ -208,8 +147,14 @@ class ARCComputingElement(ComputingElement):
         ComputingElement._addCEConfigDefaults(self)
 
     #############################################################################
-    def __writeXRSL(self, executableFile):
-        """Create the JDL for submission"""
+    def _writeXRSL(self, executableFile, inputs=None, outputs=None, executables=None):
+        """Create the JDL for submission
+
+        :param str executableFile: executable to wrap in a XRSL file
+        :param str/list inputs: path of the dependencies to include along with the executable
+        :param str/list outputs: path of the outputs that we want to get at the end of the execution
+        :param str/list executables: path to inputs that should have execution mode on the remote worker node
+        """
         diracStamp = makeGuid()[:8]
         # Evaluate the number of processors to allocate
         nProcessors = self.ceParameters.get("NumberOfProcessors", 1)
@@ -226,35 +171,103 @@ class ARCComputingElement(ComputingElement):
                 "xrslMPExtraString": self.xrslMPExtraString,
             }
 
+        # Files that would need execution rights on the remote worker node
+        xrslExecutables = ""
+        if executables:
+            if not isinstance(executables, list):
+                executables = [executables]
+            xrslExecutables = "(executables=%s)" % " ".join(map(os.path.basename, executables))
+            # Add them to the inputFiles
+            if not inputs:
+                inputs = []
+            if not isinstance(inputs, list):
+                inputs = [inputs]
+            inputs += executables
+
+        # Dependencies that have to be embedded along with the executable
+        xrslInputs = ""
+        if inputs:
+            if not isinstance(inputs, list):
+                inputs = [inputs]
+            for inputFile in inputs:
+                xrslInputs += '(%s "%s")' % (os.path.basename(inputFile), inputFile)
+
+        # Output files to retrieve once the execution is complete
+        xrslOutputs = '("%s.out" "") ("%s.err" "")' % (diracStamp, diracStamp)
+        if outputs:
+            if not isinstance(outputs, list):
+                outputs = [outputs]
+            for outputFile in outputs:
+                xrslOutputs += '(%s "")' % (outputFile)
+
         xrsl = """
 &(executable="%(executable)s")
-(inputFiles=(%(executable)s "%(executableFile)s"))
+(inputFiles=(%(executable)s "%(executableFile)s") %(xrslInputAdditions)s)
 (stdout="%(diracStamp)s.out")
 (stderr="%(diracStamp)s.err")
-(outputFiles=("%(diracStamp)s.out" "") ("%(diracStamp)s.err" ""))
+(outputFiles=%(xrslOutputFiles)s)
 (queue=%(queue)s)
 %(xrslMPAdditions)s
+%(xrslExecutables)s
 %(xrslExtraString)s
     """ % {
             "executableFile": executableFile,
             "executable": os.path.basename(executableFile),
+            "xrslInputAdditions": xrslInputs,
             "diracStamp": diracStamp,
             "queue": self.arcQueue,
+            "xrslOutputFiles": xrslOutputs,
             "xrslMPAdditions": xrslMPAdditions,
+            "xrslExecutables": xrslExecutables,
             "xrslExtraString": self.xrslExtraString,
         }
 
         return xrsl, diracStamp
 
+    def _bundlePreamble(self, executableFile):
+        """Bundle the preamble with the executable file"""
+        wrapperContent = "%s\n./%s" % (self.preamble, executableFile)
+        return writeScript(wrapperContent, os.getcwd())
+
     #############################################################################
     def _reset(self):
         self.queue = self.ceParameters.get("CEQueueName", self.ceParameters["Queue"])
-        if "GridEnv" in self.ceParameters:
-            self.gridEnv = self.ceParameters["GridEnv"]
+        self.ceHost = self.ceParameters.get("Host", self.ceHost)
+        self.gridEnv = self.ceParameters.get("GridEnv", self.gridEnv)
+
+        # extra XRSL data (should respect the XRSL format)
+        self.xrslExtraString = self.ceParameters.get("XRSLExtraString", self.xrslExtraString)
+        self.xrslMPExtraString = self.ceParameters.get("XRSLMPExtraString", self.xrslMPExtraString)
+
+        self.preamble = self.ceParameters.get("Preamble", self.preamble)
+
+        # ARC endpoint types (Gridftp, Emies)
+        endpointType = self.ceParameters.get("EndpointType", self.endpointType)
+        if endpointType not in ["Gridftp", "Emies"]:
+            self.log.warn("Unknown ARC endpoint, change to default", self.endpointType)
+        else:
+            self.endpointType = endpointType
+
+        # ARCLogLevel to enable/disable logs coming from the ARC client
+        # Because the ARC logger works independently from the standard logging library,
+        # it needs a specific initialization flag
+        # Expected values are: ["", "DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR" and "FATAL"]
+        # Modifying the ARCLogLevel of an ARCCE instance would impact all existing instances within a same process.
+        logLevel = self.ceParameters.get("ARCLogLevel", "")
+        if logLevel:
+            arc.Logger_getRootLogger().removeDestinations()
+            if logLevel not in self._arcLevels:
+                self.log.warn("ARCLogLevel input is not known:", "%s not in %s" % (logLevel, self._arcLevels))
+            else:
+                logstdout = arc.LogStream(sys.stdout)
+                logstdout.setFormat(arc.ShortFormat)
+                arc.Logger_getRootLogger().addDestination(logstdout)
+                arc.Logger_getRootLogger().setThreshold(getattr(arc, logLevel))
+
         return S_OK()
 
     #############################################################################
-    def submitJob(self, executableFile, proxy, numberOfJobs=1):
+    def submitJob(self, executableFile, proxy, numberOfJobs=1, inputs=None, outputs=None):
         """Method to submit job"""
 
         # Assume that the ARC queues are always of the format nordugrid-<batchSystem>-<queue>
@@ -269,6 +282,11 @@ class ARCComputingElement(ComputingElement):
         self.log.verbose("Executable file path: %s" % executableFile)
         if not os.access(executableFile, 5):
             os.chmod(executableFile, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH + stat.S_IXOTH)
+
+        executables = None
+        if self.preamble:
+            executables = [executableFile]
+            executableFile = self._bundlePreamble(executableFile)
 
         batchIDList = []
         stampDict = {}
@@ -287,11 +305,11 @@ class ARCComputingElement(ComputingElement):
             # The basic job description
             jobdescs = arc.JobDescriptionList()
             # Get the job into the ARC way
-            xrslString, diracStamp = self.__writeXRSL(executableFile)
+            xrslString, diracStamp = self._writeXRSL(executableFile, inputs, outputs, executables)
             self.log.debug("XRSL string submitted : %s" % xrslString)
             self.log.debug("DIRAC stamp for job : %s" % diracStamp)
             # The arc bindings don't accept unicode objects in Python 2 so xrslString must be explicitly cast
-            result = arc.JobDescription_Parse(str(xrslString), jobdescs)
+            result = arc.JobDescription.Parse(str(xrslString), jobdescs)
             if not result:
                 self.log.error("Invalid job description", "%r, message=%s" % (xrslString, result.str()))
                 break
@@ -307,30 +325,11 @@ class ARCComputingElement(ComputingElement):
                 stampDict[pilotJobReference] = diracStamp
                 self.log.debug("Successfully submitted job %s to CE %s" % (pilotJobReference, self.ceHost))
             else:
-                message = "Failed to submit job because "
-                if result.isSet(arc.SubmissionStatus.NOT_IMPLEMENTED):  # pylint: disable=no-member
-                    self.log.warn("%s feature not implemented on CE? (weird I know - complain to site admins" % message)
-                if result.isSet(arc.SubmissionStatus.NO_SERVICES):  # pylint: disable=no-member
-                    self.log.warn("%s no services are running on CE? (open GGUS ticket to site admins" % message)
-                if result.isSet(arc.SubmissionStatus.ENDPOINT_NOT_QUERIED):  # pylint: disable=no-member
-                    self.log.warn("%s endpoint was not even queried. (network ..?)" % message)
-                if result.isSet(arc.SubmissionStatus.BROKER_PLUGIN_NOT_LOADED):  # pylint: disable=no-member
-                    self.log.warn("%s BROKER_PLUGIN_NOT_LOADED : ARC library installation problem?" % message)
-                if result.isSet(arc.SubmissionStatus.DESCRIPTION_NOT_SUBMITTED):  # pylint: disable=no-member
-                    self.log.warn(
-                        "%s Job not submitted - incorrect job description? (missing field in XRSL string?)" % message
-                    )
-                if result.isSet(arc.SubmissionStatus.SUBMITTER_PLUGIN_NOT_LOADED):  # pylint: disable=no-member
-                    self.log.warn("%s SUBMITTER_PLUGIN_NOT_LOADED : ARC library installation problem?" % message)
-                if result.isSet(arc.SubmissionStatus.AUTHENTICATION_ERROR):  # pylint: disable=no-member
-                    self.log.warn(
-                        "%s authentication error - screwed up / expired proxy? Renew / upload pilot proxy on machine?"
-                        % message
-                    )
-                if result.isSet(arc.SubmissionStatus.ERROR_FROM_ENDPOINT):  # pylint: disable=no-member
-                    self.log.warn("%s some error from the CE - possibly CE problems?" % message)
-                self.log.warn("%s ... maybe above messages will give a hint." % message)
+                self._analyzeSubmissionError(result)
                 break  # Boo hoo *sniff*
+
+        if self.preamble:
+            os.unlink(executableFile)
 
         if batchIDList:
             result = S_OK(batchIDList)
@@ -338,6 +337,32 @@ class ARCComputingElement(ComputingElement):
         else:
             result = S_ERROR("No pilot references obtained from the ARC job submission")
         return result
+
+    def _analyzeSubmissionError(self, result):
+        """Provide further information about the submission error
+
+        :param arc.SubmissionStatus result: submission error
+        """
+        message = "Failed to submit job because "
+        if result.isSet(arc.SubmissionStatus.NOT_IMPLEMENTED):  # pylint: disable=no-member
+            self.log.warn("%s feature not implemented on CE? (weird I know - complain to site admins" % message)
+        if result.isSet(arc.SubmissionStatus.NO_SERVICES):  # pylint: disable=no-member
+            self.log.warn("%s no services are running on CE? (open GGUS ticket to site admins" % message)
+        if result.isSet(arc.SubmissionStatus.ENDPOINT_NOT_QUERIED):  # pylint: disable=no-member
+            self.log.warn("%s endpoint was not even queried. (network ..?)" % message)
+        if result.isSet(arc.SubmissionStatus.BROKER_PLUGIN_NOT_LOADED):  # pylint: disable=no-member
+            self.log.warn("%s BROKER_PLUGIN_NOT_LOADED : ARC library installation problem?" % message)
+        if result.isSet(arc.SubmissionStatus.DESCRIPTION_NOT_SUBMITTED):  # pylint: disable=no-member
+            self.log.warn("%s Job not submitted - incorrect job description? (missing field in XRSL string?)" % message)
+        if result.isSet(arc.SubmissionStatus.SUBMITTER_PLUGIN_NOT_LOADED):  # pylint: disable=no-member
+            self.log.warn("%s SUBMITTER_PLUGIN_NOT_LOADED : ARC library installation problem?" % message)
+        if result.isSet(arc.SubmissionStatus.AUTHENTICATION_ERROR):  # pylint: disable=no-member
+            self.log.warn(
+                "%s authentication error - screwed up / expired proxy? Renew / upload pilot proxy on machine?" % message
+            )
+        if result.isSet(arc.SubmissionStatus.ERROR_FROM_ENDPOINT):  # pylint: disable=no-member
+            self.log.warn("%s some error from the CE - possibly CE problems?" % message)
+        self.log.warn("%s ... maybe above messages will give a hint." % message)
 
     #############################################################################
     def killJob(self, jobIDList):
@@ -356,7 +381,7 @@ class ARCComputingElement(ComputingElement):
         self.log.debug("Killing jobs %s" % jobIDList)
         jobs = []
         for jobID in jobList:
-            jobs.append(self.__getARCJob(jobID))
+            jobs.append(self._getARCJob(jobID))
 
         # JobSupervisor is able to aggregate jobs to perform bulk operations and thus minimizes the communication overhead
         # We still need to create chunks to avoid timeout in the case there are too many jobs to supervise
@@ -425,11 +450,11 @@ class ARCComputingElement(ComputingElement):
                 self.log.error("ARCComputingElement: No queue ...")
                 res = S_ERROR("Unknown queue (%s) failure for site %s" % (self.queue, self.ceHost))
                 return res
-            cmd1 = "ldapsearch -x -o ldif-wrap=no -LLL -h %s:2135  -b 'o=glue' " % self.ceHost
+            cmd1 = "ldapsearch -x -o ldif-wrap=no -LLL -H ldap://%s:2135  -b 'o=glue' " % self.ceHost
             cmd2 = '"(&(objectClass=GLUE2MappingPolicy)(GLUE2PolicyRule=vo:%s))"' % vo.lower()
             cmd3 = " | grep GLUE2MappingPolicyShareForeignKey | grep %s" % (self.queue.split("-")[-1])
             cmd4 = " | sed 's/GLUE2MappingPolicyShareForeignKey: /GLUE2ShareID=/' "
-            cmd5 = " | xargs -L1 ldapsearch -x -o ldif-wrap=no -LLL -h %s:2135 -b 'o=glue' " % self.ceHost
+            cmd5 = " | xargs -L1 ldapsearch -x -o ldif-wrap=no -LLL -H ldap://%s:2135 -b 'o=glue' " % self.ceHost
             cmd6 = " | egrep '(ShareWaiting|ShareRunning)'"
             res = shellCall(0, cmd1 + cmd2 + cmd3 + cmd4 + cmd5 + cmd6)
             if not res["OK"]:
@@ -472,7 +497,7 @@ class ARCComputingElement(ComputingElement):
 
         jobs = []
         for jobID in jobList:
-            jobs.append(self.__getARCJob(jobID))
+            jobs.append(self._getARCJob(jobID))
 
         # JobSupervisor is able to aggregate jobs to perform bulk operations and thus minimizes the communication overhead
         # We still need to create chunks to avoid timeout in the case there are too many jobs to supervise
@@ -533,10 +558,10 @@ class ARCComputingElement(ComputingElement):
         return S_OK(resultDict)
 
     #############################################################################
-    def getJobOutput(self, jobID, localDir=None):
-        """Get the specified job standard output and error files. If the localDir is provided,
-        the output is returned as file in this directory. Otherwise, the output is returned
-        as strings.
+    def getJobOutput(self, jobID, workingDirectory=None):
+        """Get the specified job standard output and error files.
+        Standard output and error are returned as strings.
+        If further outputs are retrieved, they are stored in workingDirectory.
         """
         result = self._prepareProxy()
         if not result["OK"]:
@@ -552,19 +577,22 @@ class ARCComputingElement(ComputingElement):
         if not stamp:
             return S_ERROR("Pilot stamp not defined for %s" % pilotRef)
 
-        job = self.__getARCJob(pilotRef)
+        job = self._getARCJob(pilotRef)
 
         arcID = os.path.basename(pilotRef)
         self.log.debug("Retrieving pilot logs for %s" % pilotRef)
-        if "WorkingDirectory" in self.ceParameters:
-            workingDirectory = os.path.join(self.ceParameters["WorkingDirectory"], arcID)
-        else:
-            workingDirectory = arcID
+        if not workingDirectory:
+            if "WorkingDirectory" in self.ceParameters:
+                workingDirectory = os.path.join(self.ceParameters["WorkingDirectory"], arcID)
+            else:
+                workingDirectory = arcID
         outFileName = os.path.join(workingDirectory, "%s.out" % stamp)
         errFileName = os.path.join(workingDirectory, "%s.err" % stamp)
         self.log.debug("Working directory for pilot output %s" % workingDirectory)
 
-        isItOkay = job.Retrieve(self.usercfg, arc.URL(str(workingDirectory)), False)
+        # Retrieve the job output:
+        # last parameter allows downloading the outputs even if workingDirectory already exists
+        isItOkay = job.Retrieve(self.usercfg, arc.URL(str(workingDirectory)), True)
         if isItOkay:
             output = None
             error = None

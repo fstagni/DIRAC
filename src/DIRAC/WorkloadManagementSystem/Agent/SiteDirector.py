@@ -646,14 +646,20 @@ class SiteDirector(AgentModule):
             ceDict["OwnerGroup"] = self.voGroups
 
         if self.checkPlatform:
-            result = self.resourcesModule.getCompatiblePlatforms(self.queueDict[queue]["Platform"])
-            if not result["OK"]:
+            platform = self.queueDict[queue]["ParametersDict"].get("Platform")
+            if not platform:
+                self.log.error("No platform set for CE %s, returning 'ANY'" % ce)
+                ceDict["Platform"] = "ANY"
+                return ce, ceDict
+            result = self.resourcesModule.getCompatiblePlatforms(platform)
+            if result["OK"]:
+                ceDict["Platform"] = result["Value"]
+            else:
                 self.log.error(
                     "Issue getting compatible platforms, returning 'ANY'",
                     "%s: %s" % (self.platforms, result["Message"]),
                 )
                 ceDict["Platform"] = "ANY"
-            ceDict["Platform"] = result["Value"]
 
         return ce, ceDict
 
@@ -715,14 +721,11 @@ class SiteDirector(AgentModule):
         executable = self.getExecutable(queue, proxy=proxy, jobExecDir=jobExecDir, envVariables=envVariables)
 
         submitResult = ce.submitJob(executable, "", pilotsToSubmit)
-        # FIXME: The condor thing only transfers the file with some
-        # delay, so when we unlink here the script is gone
-        # FIXME 2: but at some time we need to clean up the pilot wrapper scripts...
-        if not (
-            self.queueDict[queue]["CEType"] == "HTCondorCE"
-            or (self.queueDict[queue]["CEType"] == "Local" and ce.batchSystem == "Condor")
-        ):
+        # In case the CE does not need the executable after the submission, we delete it
+        # Else, we keep it, the CE will delete it after the end of the pilot execution
+        if submitResult.get("ExecutableToKeep") != executable:
             os.unlink(executable)
+
         if not submitResult["OK"]:
             self.log.error("Failed submission to queue", "Queue %s:\n, %s" % (queue, submitResult["Message"]))
 
@@ -1021,6 +1024,12 @@ class SiteDirector(AgentModule):
         if "ExtraPilotOptions" in queueDict:
             pilotOptions.append(queueDict["ExtraPilotOptions"])
 
+        if "Modules" in queueDict:
+            pilotOptions.append("--modules=%s" % queueDict["Modules"])
+
+        if "PipInstallOptions" in queueDict:
+            pilotOptions.append("--pipInstallOptions=%s" % queueDict["PipInstallOptions"])
+
         if self.group:
             pilotOptions.append("-G %s" % self.group)
 
@@ -1082,6 +1091,9 @@ class SiteDirector(AgentModule):
                     return result
                 proxy = result["Value"]
                 ce.setProxy(proxy, 940)
+
+            if callable(getattr(ce, "cleanupPilots", None)):
+                ce.cleanupPilots()
 
             ceName = self.queueDict[queue]["CEName"]
             queueName = self.queueDict[queue]["QueueName"]

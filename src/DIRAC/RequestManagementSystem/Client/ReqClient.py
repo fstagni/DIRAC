@@ -380,18 +380,26 @@ class ReqClient(Client):
                     newJobStatus = JobStatus.DONE
                 elif jobMinorStatus == JobMinorStatus.APP_ERRORS:
                     newJobStatus = JobStatus.FAILED
+                elif jobMinorStatus == JobMinorStatus.MARKED_FOR_TERMINATION:
+                    # If the job has been Killed, set it Killed
+                    newJobStatus = JobStatus.KILLED
                 else:
-                    self.log.error("finalizeRequest: Unexpected jobMinorStatus", "(got %s)" % jobMinorStatus)
+                    self.log.error(
+                        "finalizeRequest: Unexpected jobMinorStatus", "for %d (got %s)" % (jobID, jobMinorStatus)
+                    )
                     return S_ERROR("Unexpected jobMinorStatus")
 
             if newJobStatus:
-                self.log.info("finalizeRequest: Updating job status for %d to %s/Requests done" % (jobID, newJobStatus))
+                self.log.info(
+                    "finalizeRequest: Updating job status",
+                    "for %d to '%s/%s'" % (jobID, newJobStatus, JobMinorStatus.REQUESTS_DONE),
+                )
             else:
                 self.log.info(
                     "finalizeRequest: Updating job minor status",
-                    "for %d to 'Requests done' (current status is %s)" % (jobID, jobStatus),
+                    "for %d to '%s' (current status is %s)" % (jobID, JobMinorStatus.REQUESTS_DONE, jobStatus),
                 )
-            stateUpdate = stateServer.setJobStatus(jobID, newJobStatus, "Requests done", "RMS")
+            stateUpdate = stateServer.setJobStatus(jobID, newJobStatus, JobMinorStatus.REQUESTS_DONE, "RMS")
             if jobAppStatus and stateUpdate["OK"]:
                 stateUpdate = stateServer.setJobApplicationStatus(jobID, jobAppStatus, "RMS")
             if not stateUpdate["OK"]:
@@ -598,8 +606,8 @@ def printRequest(request, status=None, full=False, verbose=True, terse=False):
             op = indexOperation[1]
             if not terse or op.Status == "Failed":
                 printOperation(indexOperation, verbose, onlyFailed=terse)
-
-    printFTSJobs(request)
+    if not terse:
+        printFTSJobs(request)
 
 
 def printOperation(indexOperation, verbose=True, onlyFailed=False):

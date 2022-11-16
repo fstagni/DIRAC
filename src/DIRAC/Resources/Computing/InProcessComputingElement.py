@@ -31,7 +31,6 @@ class InProcessComputingElement(ComputingElement):
         """Standard constructor."""
         super(InProcessComputingElement, self).__init__(ceUniqueID)
 
-        self.ceType = "InProcess"
         self.submittedJobs = 0
         self.runningJobs = 0
 
@@ -39,12 +38,13 @@ class InProcessComputingElement(ComputingElement):
         self.ceParameters["MaxTotalJobs"] = 1
 
     #############################################################################
-    def submitJob(self, executableFile, proxy=None, **kwargs):
+    def submitJob(self, executableFile, proxy=None, inputs=None, **kwargs):
         """Method to submit job (overriding base method).
 
         :param str executableFile: file to execute via systemCall.
                                    Normally the JobWrapperTemplate when invoked by the JobAgent.
         :param str proxy: the proxy used for running the job (the payload). It will be dumped to a file.
+        :param list inputs: dependencies of executableFile
         """
         payloadEnv = dict(os.environ)
         payloadProxy = ""
@@ -82,6 +82,14 @@ class InProcessComputingElement(ComputingElement):
             gThreadScheduler.removeTask(renewTask)
 
         self.runningJobs -= 1
+
+        # Delete executable file and inputs in case space is limited
+        os.unlink(executableFile)
+        if inputs:
+            if not isinstance(inputs, list):
+                inputs = [inputs]
+            for inputFile in inputs:
+                os.unlink(inputFile)
 
         ret = S_OK()
 

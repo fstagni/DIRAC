@@ -38,7 +38,7 @@ from six.moves.urllib.parse import unquote as urlunquote
 import DIRAC
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base.API import API
-from DIRAC.Core.DISET.RPCClient import RPCClient
+from DIRAC.Core.Base.Client import Client
 from DIRAC.Core.Utilities import Time
 from DIRAC.Core.Utilities.File import mkDir
 from DIRAC.Core.Utilities.List import breakListIntoChunks
@@ -56,6 +56,7 @@ from DIRAC.Interfaces.API.JobRepository import JobRepository
 from DIRAC.DataManagementSystem.Client.DataManager import DataManager
 from DIRAC.Resources.Storage.StorageElement import StorageElement
 from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
+from DIRAC.WorkloadManagementSystem.Client import JobStatus
 from DIRAC.WorkloadManagementSystem.Client.WMSClient import WMSClient
 from DIRAC.WorkloadManagementSystem.Client.SandboxStoreClient import SandboxStoreClient
 from DIRAC.WorkloadManagementSystem.Client.JobMonitoringClient import JobMonitoringClient
@@ -204,7 +205,11 @@ class Dirac(API):
             gLogger.warn("No repository is initialised")
             return S_OK()
         if requestedStates is None:
-            requestedStates = ["Done", "Failed", "Completed"]  # because users dont care about completed
+            requestedStates = [
+                JobStatus.DONE,
+                JobStatus.FAILED,
+                JobStatus.COMPLETED,
+            ]  # because users dont care about completed
         jobs = self.jobRepo.readRepository()["Value"]
         for jobID in sorted(jobs):
             jobDict = jobs[jobID]
@@ -1272,12 +1277,14 @@ class Dirac(API):
         :type destinationSE: string
         :param sourceSE: Optional source SE
         :type sourceSE: string
-        :param localCache: Optional path to local cache
+        :param localCache: Optional path to local cache, if not specified
+                           a temp dir will be created in CWD
         :type localCache: string
         :param printOutput: Optional flag to print result
         :type printOutput: boolean
         :returns: S_OK,S_ERROR
         """
+        tmpCache = False
         ret = self._checkFileArgument(lfn, "LFN", single=True)
         if not ret["OK"]:
             return ret
@@ -1286,7 +1293,8 @@ class Dirac(API):
         if not sourceSE:
             sourceSE = ""
         if not localCache:
-            localCache = ""
+            localCache = tempfile.mkdtemp(prefix=".DIRAC", suffix="rep", dir=".")
+            tmpCache = True
         if not isinstance(sourceSE, six.string_types):
             return self._errorReport("Expected string for source SE name")
         if not isinstance(localCache, six.string_types):
@@ -1305,6 +1313,8 @@ class Dirac(API):
 
         dm = DataManager()
         result = dm.replicateAndRegister(lfn, destinationSE, sourceSE, "", localCache)
+        if tmpCache:
+            shutil.rmtree(localCache, ignore_errors=True)
         if not result["OK"]:
             return self._errorReport("Problem during replicateFile call", result["Message"])
         if printOutput:
@@ -1668,9 +1678,15 @@ class Dirac(API):
         ret = self._checkJobArgument(jobID, multiple=True)
         if not ret["OK"]:
             return ret
-        jobID = ret["Value"]
+        jobIDs = ret["Value"]
 
-        result = WMSClient(useCertificates=self.useCertificates).deleteJob(jobID)
+        jobIDsToDelete = []
+        for jobID in jobIDs:
+            res = JobStatus.checkJobStateTransition(jobID, JobStatus.DELETED)
+            if res["OK"]:
+                jobIDsToDelete.append(jobID)
+
+        result = WMSClient(useCertificates=self.useCertificates).deleteJob(jobIDsToDelete)
         if result["OK"]:
             if self.jobRepo:
                 for jID in result["Value"]:
@@ -1698,9 +1714,15 @@ class Dirac(API):
         ret = self._checkJobArgument(jobID, multiple=True)
         if not ret["OK"]:
             return ret
-        jobID = ret["Value"]
+        jobIDs = ret["Value"]
 
-        result = WMSClient(useCertificates=self.useCertificates).rescheduleJob(jobID)
+        jobIDsToReschedule = []
+        for jobID in jobIDs:
+            res = JobStatus.checkJobStateTransition(jobID, JobStatus.RESCHEDULED)
+            if res["OK"]:
+                jobIDsToReschedule.append(jobID)
+
+        result = WMSClient(useCertificates=self.useCertificates).rescheduleJob(jobIDsToReschedule)
         if result["OK"]:
             if self.jobRepo:
                 repoDict = {}
@@ -1716,20 +1738,26 @@ class Dirac(API):
 
         Example Usage:
 
-         >>> print dirac.killJob(12345)
+         >>> print(dirac.killJob(12345))
          {'OK': True, 'Value': [12345]}
 
         :param jobID: JobID
-        :type jobID: int, str or python:list
+        :type jobID: int, str
         :returns: S_OK,S_ERROR
 
         """
         ret = self._checkJobArgument(jobID, multiple=True)
         if not ret["OK"]:
             return ret
-        jobID = ret["Value"]
+        jobIDs = ret["Value"]
 
-        result = WMSClient(useCertificates=self.useCertificates).killJob(jobID)
+        jobIDsToKill = []
+        for jobID in jobIDs:
+            res = JobStatus.checkJobStateTransition(jobID, JobStatus.KILLED)
+            if res["OK"]:
+                jobIDsToKill.append(jobID)
+
+        result = WMSClient(useCertificates=self.useCertificates).killJob(jobIDsToKill)
         if result["OK"]:
             if self.jobRepo:
                 for jID in result["Value"]:
@@ -2442,10 +2470,10 @@ class Dirac(API):
                 self.log.verbose("Requested service should have CS path: %s" % (section))
                 serviceURL = getServiceURL("%s/%s" % (system, service))
                 self.log.verbose("Service URL is: %s" % (serviceURL))
-                client = RPCClient("%s/%s" % (system, service))
+                client = Client(url="%s/%s" % (system, service))
             else:
                 serviceURL = url
-                client = RPCClient(url)
+                client = Client(url=url)
             result = client.ping()
             if result["OK"]:
                 result["Value"]["service url"] = serviceURL

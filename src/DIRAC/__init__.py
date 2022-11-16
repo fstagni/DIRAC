@@ -106,7 +106,7 @@ if six.PY3:
 else:
     majorVersion = 7
     minorVersion = 3
-    patchLevel = 10
+    patchLevel = 33
     preVersion = 0
 
     version = "v%sr%s" % (majorVersion, minorVersion)
@@ -132,7 +132,7 @@ def isPy3VersionNumber(releaseVersion):
     return (
         re.match(
             r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
-            version,
+            releaseVersion,
         )
         is not None
     )
@@ -160,11 +160,23 @@ def convertToPy3VersionNumber(releaseVersion):
 def _computeRootPath(rootPath):
     """Compute the root of the DIRAC installation
 
-    Detects if the installation is a server-style versioned installation by
-    recognising a folder structure like: ``versions/vX.Y.Z-$(uname -m)-TIMESTAMP/``
+    Nominally DIRACOS gives us a "sysroot" in that things like ``lib/``,
+    ``bin/``, ``share/``, ``etc/`` exist under ``$DIRACOS/``.
 
-    :param str rootPath: The result of ``sys.base_prefix``
-    :return: bool
+    In the case of an uncontainerised server installation it is useful to keep
+    multiple versions of DIRAC+DIRACOS available so we can switch between them
+    easily if something goes wrong during an upgrade. We also want to ensure
+    that fixed paths like ``etc/dirac.cfg``, ``runit/``, ``startup/`` are
+    preservered between versions.
+
+    To achieve this generically while mostly following the Python 2 style DIRAC
+    installation layout we start from ``sys.base_prefix`` and look if the
+    folder structure looks like a "server" layout, i.e.
+    ``versions/vX.Y.Z-$TIMESTAMP/$(uname -s)_$(uname -m)/``. If it does we
+    return the directory that contains ``versions/``.
+
+    :param str rootPath:
+    :return: The DIRAC rootPath, accounting for server-style installations.
     """
     import re
     from pathlib import Path  # pylint: disable=import-error
@@ -190,6 +202,9 @@ if six.PY3:
 else:
     pythonPath = os.path.realpath(__path__[0])
     rootPath = os.path.dirname(pythonPath)
+# Allow rootPath detection to be overridden
+if "DIRAC_ROOT_PATH" in os.environ:
+    rootPath = os.environ["DIRAC_ROOT_PATH"]
 
 # Import DIRAC.Core.Utils modules
 

@@ -29,6 +29,7 @@ import six
 import os
 import datetime
 import errno
+from contextlib import contextmanager
 from stat import S_ISREG, S_ISDIR, S_IXUSR, S_IRUSR, S_IWUSR, S_IRWXG, S_IRWXU, S_IRWXO
 
 import gfal2  # pylint: disable=import-error
@@ -42,6 +43,62 @@ from DIRAC.Core.Security.ProxyInfo import getProxyInfo
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOForGroup
 from DIRAC.Core.Utilities.File import getSize
 from DIRAC.Core.Utilities.Pfn import pfnparse, pfnunparse
+
+# MacOS does not know ECOMM...
+try:
+    ECOMM = errno.ECOMM
+except AttributeError:
+    ECOMM = 70
+
+
+@contextmanager
+def setGfalSetting(ctx, pluginName, optionName, optionValue):
+    """This contect manager allows to define gfal2 plugin options.
+    The parameters are those required by the ``set_opt_*`` methods of the
+    Gfal2 context
+
+    For example:
+
+    .. code-block :: python
+
+        with setGfalSetting(ctx, "HTTP PLUGIN", "OPERATION_TIMEOUT", 30):
+            ctx.unlink(path)
+
+    :param ctx: Gfal2 context
+    :param str pluginName: Name of the plugin concerned
+    :param str optionName: name of the option
+    :param optionValue: value of the option
+
+    """
+
+    if isinstance(optionValue, bool):
+        _setter = ctx.set_opt_boolean
+        _getter = ctx.get_opt_boolean
+    elif isinstance(optionValue, int):
+        _setter = ctx.set_opt_integer
+        _getter = ctx.get_opt_integer
+    elif isinstance(optionValue, str):
+        _setter = ctx.set_opt_string
+        _getter = ctx.get_opt_string
+    elif isinstance(optionValue, list):
+        _setter = ctx.set_opt_string_list
+        _getter = ctx.get_opt_string_list
+    else:
+        raise NotImplementedError("Unknown option type %s" % type(optionValue))
+
+    try:
+        # raises an error if setting does not exist
+        old_value = _getter(pluginName, optionName)
+    except gfal2.GError:
+        old_value = None
+    _setter(pluginName, optionName, optionValue)
+    try:
+        yield
+    finally:
+        if old_value is None:
+            ctx.remove_opt(pluginName, optionName)
+        else:
+            _setter(pluginName, optionName, old_value)
 
 
 # # RCSID
@@ -1110,7 +1167,7 @@ class GFAL2_StorageBase(StorageBase):
         log = self.log.getSubLogger("GFAL2_StorageBase._createSingleDirectory")
         try:
             log.debug("Creating %s" % path)
-            status = self.ctx.mkdir_rec(str(path), 755)
+            status = self.ctx.mkdir_rec(str(path), 0o755)
             if status >= 0:
                 log.debug("Successfully created directory")
                 return S_OK()
@@ -1126,7 +1183,7 @@ class GFAL2_StorageBase(StorageBase):
             # encounter ECOMM when creating an existing directory
             # This will be fixed in the future versions of DPM,
             # but in the meantime, we catch it ourselves.
-            if e.code in (errno.EEXIST, errno.ECOMM):
+            if e.code in (errno.EEXIST, ECOMM):
                 log.debug("Directory already exists")
                 return S_OK()
             # any other error: failed to create directory

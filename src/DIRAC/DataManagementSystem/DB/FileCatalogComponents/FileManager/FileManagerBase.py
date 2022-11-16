@@ -1234,9 +1234,9 @@ class FileManagerBase(object):
                 successful[lfn] = True
             else:
                 fileID = res["Value"]["Successful"][lfn]["FileID"]
-                res = self._setFileParameter(fileID, "GID", group)
-                if not res["OK"]:
-                    failed[lfn] = res["Message"]
+                setRes = self._setFileParameter(fileID, "GID", group)
+                if not setRes["OK"]:
+                    failed[lfn] = setRes["Message"]
                 else:
                     successful[lfn] = True
         return S_OK({"Successful": successful, "Failed": failed})
@@ -1264,9 +1264,9 @@ class FileManagerBase(object):
                 successful[lfn] = True
             else:
                 fileID = res["Value"]["Successful"][lfn]["FileID"]
-                res = self._setFileParameter(fileID, "UID", owner)
-                if not res["OK"]:
-                    failed[lfn] = res["Message"]
+                setRes = self._setFileParameter(fileID, "UID", owner)
+                if not setRes["OK"]:
+                    failed[lfn] = setRes["Message"]
                 else:
                     successful[lfn] = True
         return S_OK({"Successful": successful, "Failed": failed})
@@ -1289,9 +1289,9 @@ class FileManagerBase(object):
                 successful[lfn] = True
             else:
                 fileID = res["Value"]["Successful"][lfn]["FileID"]
-                res = self._setFileParameter(fileID, "Mode", mode)
-                if not res["OK"]:
-                    failed[lfn] = res["Message"]
+                setRes = self._setFileParameter(fileID, "Mode", mode)
+                if not setRes["OK"]:
+                    failed[lfn] = setRes["Message"]
                 else:
                     successful[lfn] = True
         return S_OK({"Successful": successful, "Failed": failed})
@@ -1339,12 +1339,12 @@ class FileManagerBase(object):
         """
         return self._setFileParameter(path, "Mode", mode)
 
-    def getSEDump(self, seName):
+    def getSEDump(self, seNames):
         """
          Return all the files at a given SE, together with checksum and size
 
-        :param seName: name of the StorageElement
+        :param seName: list of storageElement names
 
-        :returns: S_OK with list of tuples (lfn, checksum, size)
+        :returns: S_OK with list of tuples (SEName, lfn, checksum, size)
         """
         return S_ERROR("To be implemented on derived class")

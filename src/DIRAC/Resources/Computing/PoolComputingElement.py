@@ -3,9 +3,26 @@
 # Author : A.T.
 ########################################################################
 
-""" The Pool Computing Element is an "inner" CE (meaning it's used by a jobAgent inside a pilot)
+"""The Pool Computing Element is an "inner" CE (meaning it's used by a jobAgent inside a pilot)
 
-    It's used running several jobs simultaneously in separate processes, managed by a ProcessPool
+It's used running several jobs simultaneously in separate processes, managed by a ProcessPool.
+
+**Configuration Parameters**
+
+LocalCEType:
+   Configuration for the PoolCE submission can be done via the CE configuration such as::
+
+     LocalCEType = Pool
+
+   The Pool Computing Element is specific: it embeds an additional "inner" CE
+   (`InProcess` by default, `Sudo`, `Singularity`). The "inner" CE can be specified such as::
+
+     LocalCEType = Pool/Singularity
+
+NumberOfProcessors:
+   Maximum number of processors that can be used to compute jobs.
+
+**Code Documentation**
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -29,7 +46,7 @@ from DIRAC.Resources.Computing.SingularityComputingElement import SingularityCom
 MAX_NUMBER_OF_SUDO_UNIX_USERS = 32
 
 
-def executeJob(executableFile, proxy, taskID, **kwargs):
+def executeJob(executableFile, proxy, taskID, inputs, **kwargs):
     """wrapper around ce.submitJob: decides which CE to use (Sudo or InProcess or Singularity)
 
     :param str executableFile: location of the executable file
@@ -51,7 +68,7 @@ def executeJob(executableFile, proxy, taskID, **kwargs):
     else:
         ce = InProcessComputingElement("Task-" + str(taskID))
 
-    return ce.submitJob(executableFile, proxy)
+    return ce.submitJob(executableFile, proxy, inputs=inputs, **kwargs)
 
 
 class PoolComputingElement(ComputingElement):
@@ -61,7 +78,6 @@ class PoolComputingElement(ComputingElement):
         """Standard constructor."""
         super(PoolComputingElement, self).__init__(ceUniqueID)
 
-        self.ceType = "Pool"
         self.submittedJobs = 0
         self.processors = 1
         self.pPool = None
@@ -95,12 +111,13 @@ class PoolComputingElement(ComputingElement):
         return processorsInUse
 
     #############################################################################
-    def submitJob(self, executableFile, proxy=None, **kwargs):
+    def submitJob(self, executableFile, proxy=None, inputs=None, **kwargs):
         """Method to submit job.
         This method will submit to a ProcessPoolExecutor, which returns Future objects.
 
         :param str executableFile: location of the executable file
         :param str proxy: payload proxy
+        :param list inputs: dependencies of executableFile
 
         :return: S_OK/S_ERROR of the result of the job submission
         """
@@ -117,15 +134,17 @@ class PoolComputingElement(ComputingElement):
         res = cd.loadFile("pilot.cfg")
         if not res["OK"]:
             self.log.error("Could not load pilot.cfg", res["Message"])
-        # only NumberOfProcessors for now, but RAM (or other stuff) can also be added
-        jobID = int(kwargs.get("jobDesc", {}).get("jobID", 0))
-        cd.setOptionInCFG("/Resources/Computing/JobLimits/%d/NumberOfProcessors" % jobID, processorsForJob)
-        res = cd.dumpLocalCFGToFile("pilot.cfg")
-        if not res["OK"]:
-            self.log.error("Could not dump cfg to pilot.cfg", res["Message"])
+        else:
+            # only NumberOfProcessors for now, but RAM (or other stuff) can also be added
+            jobID = int(kwargs.get("jobDesc", {}).get("jobID", 0))
+            cd.setOptionInCFG("/Resources/Computing/JobLimits/%d/NumberOfProcessors" % jobID, processorsForJob)
+            res = cd.dumpLocalCFGToFile("pilot.cfg")
+            if not res["OK"]:
+                self.log.error("Could not dump cfg to pilot.cfg", res["Message"])
 
         # Here we define task kwargs: adding complex objects like thread.Lock can trigger errors in the task
         taskKwargs = {"InnerCESubmissionType": self.innerCESubmissionType}
+        taskKwargs["jobDesc"] = kwargs.get("jobDesc", {})
         if self.innerCESubmissionType == "Sudo":
             for nUser in range(MAX_NUMBER_OF_SUDO_UNIX_USERS):
                 if nUser not in self.userNumberPerTask.values():
@@ -134,7 +153,7 @@ class PoolComputingElement(ComputingElement):
             if "USER" in os.environ:
                 taskKwargs["PayloadUser"] = os.environ["USER"] + "p%s" % str(nUser).zfill(2)
 
-        future = self.pPool.submit(executeJob, executableFile, proxy, self.taskID, **taskKwargs)
+        future = self.pPool.submit(executeJob, executableFile, proxy, self.taskID, inputs, **taskKwargs)
         self.processorsPerTask[future] = processorsForJob
         self.taskID += 1
         future.add_done_callback(self.finalizeJob)
@@ -191,7 +210,7 @@ class PoolComputingElement(ComputingElement):
         if result["OK"]:
             self.log.info("Task %s finished successfully, %d processor(s) freed" % (future, nProc))
         else:
-            self.log.error("Task failed submission", "%d, message: %s" % (future, result["Message"]))
+            self.log.error("Task failed submission", "%s, message: %s" % (future, result["Message"]))
         self.taskResults[future] = result
 
     def getCEStatus(self):

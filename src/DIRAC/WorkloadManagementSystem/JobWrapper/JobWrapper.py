@@ -30,6 +30,8 @@ import json
 import distutils.spawn
 import six
 
+if six.PY2:
+    from codecs import open
 from six.moves.urllib.parse import unquote as urlunquote
 
 import DIRAC
@@ -194,7 +196,7 @@ class JobWrapper(object):
     #############################################################################
     def initialize(self, arguments):
         """Initializes parameters and environment for job."""
-        self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.JOB_INITIALIZATION)
+        self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.JOB_INITIALIZATION, sendFlag=True)
         self.log.info("Starting Job Wrapper Initialization for Job", self.jobID)
         self.jobArgs = arguments["Job"]
         self.log.verbose(self.jobArgs)
@@ -217,6 +219,10 @@ class JobWrapper(object):
         self.processingType = self.jobArgs.get("ProcessingType", self.processingType)
         self.userGroup = self.jobArgs.get("OwnerGroup", self.userGroup)
         self.jobClass = self.jobArgs.get("JobSplitType", self.jobClass)
+
+        if not self.cpuNormalizationFactor:
+            self.cpuNormalizationFactor = float(self.ceArgs.get("CPUNormalizationFactor", self.cpuNormalizationFactor))
+        self.siteName = self.ceArgs.get("Site", self.siteName)
 
         # Prepare the working directory, cd to there, and copying eventual extra arguments in it
         if self.jobID:
@@ -337,6 +343,23 @@ class JobWrapper(object):
             )
             executable = "dirac-jobexec"
 
+        # In case the executable is dirac-jobexec,
+        # the configuration should include essential parameters related to the CE (which can be found in ceArgs)
+        # we consider information from ceArgs more accurate than from LocalSite (especially when jobs are pushed)
+        configOptions = ""
+        if executable == "dirac-jobexec":
+            configOptions = "-o /LocalSite/CPUNormalizationFactor=%s " % self.cpuNormalizationFactor
+            configOptions += "-o /LocalSite/Site=%s " % self.siteName
+            configOptions += "-o /LocalSite/GridCE=%s " % self.ceArgs.get(
+                "GridCE", gConfig.getValue("/LocalSite/GridCE", "")
+            )
+            configOptions += "-o /LocalSite/CEQueue=%s " % self.ceArgs.get(
+                "Queue", gConfig.getValue("/LocalSite/CEQueue", "")
+            )
+            configOptions += "-o /LocalSite/RemoteExecution=%s " % self.ceArgs.get(
+                "RemoteExecution", gConfig.getValue("/LocalSite/RemoteExecution", False)
+            )
+
         executable = os.path.expandvars(executable)
         exeThread = None
         spObject = None
@@ -371,12 +394,14 @@ class JobWrapper(object):
                 self.log.verbose("%s = %s" % (nameEnv, valEnv))
 
         if os.path.exists(executable):
-            # it's in fact not yet running: it will be in few lines
-            self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.APPLICATION, sendFlag=True)
+            # the actual executable is not yet running: it will be in few lines
+            self.__report(minorStatus=JobMinorStatus.APPLICATION, sendFlag=True)
             spObject = Subprocess(timeout=False, bufferLimit=int(self.bufferLimit))
             command = executable
             if jobArguments:
-                command += " " + jobArguments
+                command += " " + str(jobArguments)
+            if configOptions:
+                command += " " + configOptions
             self.log.verbose("Execution command: %s" % (command))
             maxPeekLines = self.maxPeekLines
             exeThread = ExecutionThread(spObject, command, maxPeekLines, outputFile, errorFile, exeEnv)
@@ -414,6 +439,16 @@ class JobWrapper(object):
 
         if "DisableCPUCheck" in self.jobArgs:
             watchdog.testCPUConsumed = False
+
+        # disable checks if remote execution: do not need it as pre/post processing occurs locally
+        if self.ceArgs.get("RemoteExecution", False):
+            watchdog.testWallClock = False
+            watchdog.testDiskSpace = False
+            watchdog.testLoadAvg = False
+            watchdog.testCPUConsumed = False
+            watchdog.testCPULimit = False
+            watchdog.testMemoryLimit = False
+            watchdog.testTimeLeft = False
 
         if exeThread.is_alive():
             self.log.info("Application thread is started in Job Wrapper")
@@ -482,9 +517,7 @@ class JobWrapper(object):
                 self.__report(status=JobStatus.COMPLETING, minorStatus=JobMinorStatus.APP_ERRORS, sendFlag=True)
                 if status in (DErrno.EWMSRESC, DErrno.EWMSRESC & 255):  # the status will be truncated to 0xDE (222)
                     self.log.verbose("job will be rescheduled")
-                    self.__report(
-                        status=JobStatus.COMPLETING, minorStatus=JobMinorStatus.GOING_RESCHEDULE, sendFlag=True
-                    )
+                    self.__report(minorStatus=JobMinorStatus.GOING_RESCHEDULE, sendFlag=True)
                     return S_ERROR(DErrno.EWMSRESC, "Job will be rescheduled")
 
         else:
@@ -564,7 +597,9 @@ class JobWrapper(object):
     #############################################################################
     def resolveInputData(self):
         """Input data is resolved here using a VO specific plugin module."""
-        self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.INPUT_DATA_RESOLUTION, sendFlag=True)
+        self.__report(
+            minorStatus=JobMinorStatus.INPUT_DATA_RESOLUTION, sendFlag=True
+        )  # if we are here, the status should be "Running"
 
         # What is this input data? - and exit if there's no input
         inputData = self.jobArgs["InputData"]
@@ -899,7 +934,7 @@ class JobWrapper(object):
     def __transferOutputDataFiles(self, outputData, outputSE, outputPath):
         """Performs the upload and registration in the File Catalog(s)"""
         self.log.verbose("Uploading output data files")
-        self.__report(status=JobStatus.COMPLETING, minorStatus=JobMinorStatus.UPLOADING_OUTPUT_DATA)
+        self.__report(minorStatus=JobMinorStatus.UPLOADING_OUTPUT_DATA)  # the major status should be "Completing"
         self.log.info("Output data files %s to be uploaded to %s SE" % (", ".join(outputData), outputSE))
         missing = []
         uploaded = []
@@ -1091,7 +1126,7 @@ class JobWrapper(object):
         sandboxFiles = []
         registeredISB = []
         lfns = []
-        self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.DOWNLOADING_INPUT_SANDBOX)
+        self.__report(minorStatus=JobMinorStatus.DOWNLOADING_INPUT_SANDBOX)  # Should be in "Running" status
         if not isinstance(inputSandbox, (list, tuple)):
             inputSandbox = [inputSandbox]
         for isb in inputSandbox:
@@ -1118,21 +1153,19 @@ class JobWrapper(object):
                     self.log.info("Downloading Input SandBox %s" % isb)
                     result = SandboxStoreClient().downloadSandbox(isb)
                     if not result["OK"]:
-                        self.__report(
-                            status=JobStatus.RUNNING, minorStatus=JobMinorStatus.FAILED_DOWNLOADING_INPUT_SANDBOX
-                        )
+                        self.__report(minorStatus=JobMinorStatus.FAILED_DOWNLOADING_INPUT_SANDBOX)
                         return S_ERROR("Cannot download Input sandbox %s: %s" % (isb, result["Message"]))
                     else:
                         self.inputSandboxSize += result["Value"]
 
         if lfns:
             self.log.info("Downloading Input SandBox LFNs, number of files to get", len(lfns))
-            self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.DOWNLOADING_INPUT_SANDBOX_LFN)
+            self.__report(minorStatus=JobMinorStatus.DOWNLOADING_INPUT_SANDBOX_LFN)
             lfns = [fname.replace("LFN:", "").replace("lfn:", "") for fname in lfns]
             download = self.dm.getFile(lfns)
             if not download["OK"]:
                 self.log.warn(download)
-                self.__report(status=JobStatus.RUNNING, minorStatus=JobMinorStatus.FAILED_DOWNLOADING_INPUT_SANDBOX_LFN)
+                self.__report(minorStatus=JobMinorStatus.FAILED_DOWNLOADING_INPUT_SANDBOX_LFN)
                 return S_ERROR(download["Message"])
             failed = download["Value"]["Failed"]
             if failed:
@@ -1260,6 +1293,7 @@ class JobWrapper(object):
             "JobType": self.jobType,
             "JobClass": self.jobClass,
             "ProcessingType": self.processingType,
+            "Site": self.siteName,
             "FinalMajorStatus": self.wmsMajorStatus,
             "FinalMinorStatus": self.wmsMinorStatus,
             "CPUTime": cpuTime,
@@ -1303,16 +1337,6 @@ class JobWrapper(object):
         request.JobID = self.jobID
         request.SourceComponent = "Job_%s" % self.jobID
 
-        # JobReport part first
-        result = self.jobReport.generateForwardDISET()
-        if result["OK"]:
-            if isinstance(result["Value"], Operation):
-                self.log.info("Adding a job state update DISET operation to the request")
-                request.addOperation(result["Value"])
-        else:
-            self.log.warn("JobReportFailure", "Could not generate a forwardDISET operation: %s" % result["Message"])
-            self.log.warn("JobReportFailure", "The job won't fail, but the jobLogging info might be incomplete")
-
         # Failover transfer requests
         for storedOperation in self.failoverTransfer.request:
             request.addOperation(storedOperation)
@@ -1324,6 +1348,16 @@ class JobWrapper(object):
                 requestStored = Request(json.load(rFile))
             for storedOperation in requestStored:
                 request.addOperation(storedOperation)
+
+        # JobReport part
+        result = self.jobReport.generateForwardDISET()
+        if result["OK"]:
+            if isinstance(result["Value"], Operation):
+                self.log.info("Adding a job state update DISET operation to the request")
+                request.addOperation(result["Value"])
+        else:
+            self.log.warn("JobReportFailure", "Could not generate a forwardDISET operation: %s" % result["Message"])
+            self.log.warn("JobReportFailure", "The job won't fail, but the jobLogging info might be incomplete")
 
         if len(request):
             # The request is ready, send it now
@@ -1473,10 +1507,10 @@ class ExecutionThread(threading.Thread):
     #############################################################################
     def sendOutput(self, stdid, line):
         if stdid == 0 and self.stdout:
-            with open(self.stdout, "a+") as outputFile:
+            with open(self.stdout, "a+", encoding="utf-8", errors="backslashreplace") as outputFile:
                 print(line, file=outputFile)
         elif stdid == 1 and self.stderr:
-            with open(self.stderr, "a+") as errorFile:
+            with open(self.stderr, "a+", encoding="utf-8", errors="backslashreplace") as errorFile:
                 print(line, file=errorFile)
         self.outputLines.append(line)
         size = len(self.outputLines)
@@ -1524,8 +1558,7 @@ def rescheduleFailedJob(jobID, minorStatus, jobReport=None):
 
         gLogger.info("Job will be rescheduled after exception during execution of the JobWrapper")
 
-        jobManager = JobManagerClient()
-        result = jobManager.rescheduleJob(int(jobID))
+        result = JobManagerClient().rescheduleJob(int(jobID))
         if not result["OK"]:
             gLogger.warn(result["Message"])
             if "Maximum number of reschedulings is reached" in result["Message"]:
