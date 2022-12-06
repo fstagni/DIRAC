@@ -1,8 +1,46 @@
 """
 Utilities to create replication transformations
 """
-from DIRAC.TransformationSystem.Client.Transformation import Transformation
 from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC.TransformationSystem.Client.Transformation import Transformation
+from DIRAC.TransformationSystem.Client.TransformationClient import TransformationClient
+
+
+def getTransformationName(transName, unique=True):
+    """
+    Get a transformation name from a base name
+    If unique is requested, return None if already exists
+    """
+    tName = transName
+    trial = 0
+    transClient = TransformationClient()
+    while True:
+        # Check if there is already a transformation with that name
+        res = transClient.getTransformation(tName)
+        if res["OK"]:
+            # Transformation already exists
+            if unique:
+                # If unique is required and the transformation is not in a final status, give up
+                if res["Value"]["Status"] not in (
+                    "Archived",
+                    "Cleaned",
+                    "Cleaning",
+                    "Deleted",
+                    "TransformationCleaned",
+                ):
+                    tName = None
+                    gLogger.notice(
+                        "Transformation %s already exists with ID %d, status %s"
+                        % (transName, res["Value"]["TransformationID"], res["Value"]["Status"])
+                    )
+                    break
+            trial += 1
+            # Check again with new name
+            tName = transName + "-" + str(trial)
+        else:
+            # Transformation doesn't exist, OK
+            break
+    return tName
 
 
 def createDataTransformation(
@@ -62,7 +100,7 @@ def createDataTransformation(
     if extraname:
         transName += "_%s" % extraname
 
-    trans.setTransformationName(transName)
+    trans.setTransformationName(getTransformationName(transName))
     description = "{} files for {} {} to {}".format(transVerb, metaKey, str(metaValue), ",".join(targetSE))
     trans.setDescription(description[:255])
     trans.setLongDescription(description)
