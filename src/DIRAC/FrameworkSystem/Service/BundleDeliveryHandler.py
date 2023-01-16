@@ -6,7 +6,6 @@ import io
 
 from DIRAC.Core.DISET.RequestHandler import RequestHandler
 from DIRAC import gLogger, S_OK, S_ERROR, gConfig
-from DIRAC.Core.Utilities.ThreadScheduler import gThreadScheduler
 from DIRAC.Core.Utilities import File, List
 from DIRAC.Core.Security import Locations, Utilities
 
@@ -83,15 +82,8 @@ class BundleManager:
 class BundleDeliveryHandlerMixin:
     @classmethod
     def initializeHandler(cls, serviceInfoDict):
-
-        ## FIXME: move to an agent
         csPath = serviceInfoDict["serviceSectionPath"]
         cls.bundleManager = BundleManager(csPath)
-        updateBundleTime = gConfig.getValue("%s/BundlesLifeTime" % csPath, 3600 * 6)
-        gLogger.info("Bundles will be updated each %s secs" % updateBundleTime)
-        gThreadScheduler.addPeriodicTask(updateBundleTime, cls.bundleManager.updateBundles)
-        ##
-
         return S_OK()
 
     types_getListOfBundles = []
@@ -100,30 +92,32 @@ class BundleDeliveryHandlerMixin:
     def export_getListOfBundles(cls):
         return S_OK(cls.bundleManager.getBundles())
 
-    def transfer_toClient(self, fileId, token, fileHelper):
+    def transfer_toClient(self, fileId, _token, fileHelper):
+
+        self.bundleManager.updateBundles()
+
         version = ""
         if isinstance(fileId, str):
             if fileId in ["CAs", "CRLs"]:
                 return self.__transferFile(fileId, fileHelper)
-            else:
-                bId = fileId
+            bId = fileId
         elif isinstance(fileId, (list, tuple)):
             if len(fileId) == 0:
                 fileHelper.markAsTransferred()
                 return S_ERROR("No bundle specified!")
-            elif len(fileId) == 1:
+            if len(fileId) == 1:
                 bId = fileId[0]
             else:
                 bId = fileId[0]
                 version = fileId[1]
         if not self.bundleManager.bundleExists(bId):
             fileHelper.markAsTransferred()
-            return S_ERROR("Unknown bundle %s" % bId)
+            return S_ERROR(f"Unknown bundle {bId}")
 
         bundleVersion = self.bundleManager.getBundleVersion(bId)
         if bundleVersion is None:
             fileHelper.markAsTransferred()
-            return S_ERROR("Empty bundle %s" % bId)
+            return S_ERROR("Empty bundle {bId}")
 
         if version == bundleVersion:
             fileHelper.markAsTransferred()
@@ -148,7 +142,7 @@ class BundleDeliveryHandlerMixin:
         elif filetype == "CRLs":
             retVal = Utilities.generateRevokedCertsFile()
         else:
-            return S_ERROR("Not supported file type %s" % filetype)
+            return S_ERROR(f"Not supported file type {filetype}")
 
         if not retVal["OK"]:
             return retVal
@@ -158,7 +152,7 @@ class BundleDeliveryHandlerMixin:
                 result = fileHelper.sendEOF()
                 # better to check again the existence of the file
                 if not os.path.exists(retVal["Value"]):
-                    return S_ERROR("File %s does not exist" % os.path.basename(retVal["Value"]))
+                    return S_ERROR(f"File {os.path.basename(retVal['Value'])} does not exist")
                 else:
                     return S_ERROR("Failed to get file descriptor")
             fileDescriptor = result["Value"]

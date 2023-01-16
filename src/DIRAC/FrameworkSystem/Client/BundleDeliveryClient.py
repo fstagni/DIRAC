@@ -87,7 +87,7 @@ class BundleDeliveryClient(Client):
                     self.log.error(f"{getpass.getuser()} does not have the permissions to update {dirToSyncTo}")
                     return S_ERROR(f"{getpass.getuser()} does not have the permissions to update {dirToSyncTo}")
         else:
-            self.log.info("Creating dir %s" % dirToSyncTo)
+            self.log.info("Creating dir", dirToSyncTo)
             mkDir(dirToSyncTo)
             dirCreated = True
         currentHash = self.__getHash(bundleID, dirToSyncTo)
@@ -98,13 +98,13 @@ class BundleDeliveryClient(Client):
         if not result["OK"]:
             self.log.error("Could not sync dir", result["Message"])
             if dirCreated:
-                self.log.info("Removing dir %s" % dirToSyncTo)
+                self.log.info("Removing dir", dirToSyncTo)
                 os.unlink(dirToSyncTo)
             buff.close()
             return result
         newHash = result["Value"]
         if newHash == currentHash:
-            self.log.info("Dir %s was already in sync" % dirToSyncTo)
+            self.log.info(f"Dir {dirToSyncTo} was already in sync")
             return S_OK(False)
         buff.seek(0)
         self.log.info("Synchronizing dir with remote bundle")
@@ -115,10 +115,10 @@ class BundleDeliveryClient(Client):
                 except OSError as e:
                     self.log.error("Could not sync dir:", str(e))
                     if dirCreated:
-                        self.log.info("Removing dir %s" % dirToSyncTo)
+                        self.log.info("Removing dir", dirToSyncTo)
                         os.unlink(dirToSyncTo)
                     buff.close()
-                    return S_ERROR("Certificates directory update failed: %s" % str(e))
+                    return S_ERROR(f"Certificates directory update failed: {e}")
 
         buff.close()
         self.__setHash(bundleID, dirToSyncTo, newHash)
