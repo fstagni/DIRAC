@@ -527,8 +527,10 @@ def runDiracConfigure(params):
                 result = bdc.syncCAs()
                 if result["OK"]:
                     result = bdc.syncCRLs()
+                if not result["OK"]:
+                    DIRAC.gLogger.error("Failed to sync CAs and/or CRLs", result["Message"])
             except Exception as e:
-                DIRAC.gLogger.error("Failed to sync CAs and CRLs: %s" % str(e))
+                DIRAC.gLogger.error("Failed to sync CAs and/or CRLs", e)
 
         Script.localCfg.deleteOption("/DIRAC/Security/SkipCAChecks")
 

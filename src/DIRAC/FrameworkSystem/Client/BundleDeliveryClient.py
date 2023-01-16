@@ -1,21 +1,40 @@
 """ Client for interacting with Framework/BundleDelivery service
 """
-import os
 import getpass
+import os
 import tarfile
-from io import BytesIO
 from base64 import b64decode
+from io import BytesIO
 
-from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.Core.Base.Client import Client, createClient
-from DIRAC.Core.Tornado.Client.TornadoClient import TornadoClient
-from DIRAC.Core.Tornado.Client.ClientSelector import TransferClientSelector as TransferClient
-from DIRAC.Core.Security import Locations, Utilities
-from DIRAC.Core.Utilities.File import mkDir
+from DIRAC import S_ERROR, S_OK, gLogger
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import skipCACheck
+from DIRAC.Core.Base.Client import Client, createClient
+from DIRAC.Core.Security import Locations, Utilities
+from DIRAC.Core.Tornado.Client.ClientSelector import TransferClientSelector as TransferClient
+from DIRAC.Core.Tornado.Client.TornadoClient import TornadoClient
+from DIRAC.Core.Utilities.File import mkDir
+
+
+def getHash(bundleID, dirToSyncTo):
+    """Get hash for bundle in directory
+
+    :param str bundleID: bundle ID
+    :param str dirToSyncTo: path to sync directory
+
+    :return: str
+    """
+    try:
+        with open(os.path.join(dirToSyncTo, f".dab.{bundleID}"), "rb") as fd:
+            bdHash = fd.read().strip()
+            return bdHash.decode()
+    except OSError as e:
+        gLogger.exception("File can't be open/read, returning empty string", lException=e)
+        return ""
 
 
 class BundleDeliveryJSONClient(TornadoClient):
+    """Utility class for JSON-encoded HTTPs responses"""
+
     def receiveFile(self, buff, fileId):
         retVal = self.executeRPC("streamToClient", fileId)
         if retVal["OK"]:
@@ -26,6 +45,8 @@ class BundleDeliveryJSONClient(TornadoClient):
 
 @createClient("Framework/BundleDelivery")
 class BundleDeliveryClient(Client):
+    """Client for interacting with Framework/BundleDelivery service"""
+
     def __init__(self, transferClient=False, **kwargs):
         super().__init__(**kwargs)
         self.setServer("Framework/BundleDelivery")
@@ -43,21 +64,6 @@ class BundleDeliveryClient(Client):
             "Framework/BundleDelivery", skipCACheck=skipCACheck(), httpsClient=BundleDeliveryJSONClient
         )
 
-    def __getHash(self, bundleID, dirToSyncTo):
-        """Get hash for bundle in directory
-
-        :param str bundleID: bundle ID
-        :param str dirToSyncTo: path to sync directory
-
-        :return: str
-        """
-        try:
-            with open(os.path.join(dirToSyncTo, ".dab.%s" % bundleID), "rb") as fd:
-                bdHash = fd.read().strip()
-                return bdHash.decode()
-        except Exception:
-            return ""
-
     def __setHash(self, bundleID, dirToSyncTo, bdHash):
         """Set hash for bundle in directory
 
@@ -66,7 +72,7 @@ class BundleDeliveryClient(Client):
         :param str bdHash: new hash
         """
         try:
-            fileName = os.path.join(dirToSyncTo, ".dab.%s" % bundleID)
+            fileName = os.path.join(dirToSyncTo, f".dab.{bundleID}")
             with open(fileName, "wb") as fd:
                 fd.write(bdHash if isinstance(bdHash, bytes) else bdHash.encode())
         except Exception as e:
@@ -90,7 +96,7 @@ class BundleDeliveryClient(Client):
             self.log.info("Creating dir", dirToSyncTo)
             mkDir(dirToSyncTo)
             dirCreated = True
-        currentHash = self.__getHash(bundleID, dirToSyncTo)
+        currentHash = getHash(bundleID, dirToSyncTo)
         self.log.info(f"Current hash for bundle {bundleID} in dir {dirToSyncTo} is '{currentHash}'")
         buff = BytesIO()
         transferClient = self.__getTransferClient()
@@ -123,7 +129,7 @@ class BundleDeliveryClient(Client):
         buff.close()
         self.__setHash(bundleID, dirToSyncTo, newHash)
         self.log.info("Dir has been synchronized")
-        return S_OK(True)
+        return S_OK()
 
     def syncCAs(self):
         """Synchronize CAs
@@ -163,18 +169,18 @@ class BundleDeliveryClient(Client):
         :return: S_OK(str)/S_ERROR()
         """
         retVal = Utilities.generateCAFile()
-        if not retVal["OK"]:
-            self.log.warn("Could not generate/find CA file", retVal["Message"])
-            # if we can not found the file, we return the directory, where the file should be
-            transferClient = self.__getTransferClient()
-            casFile = os.path.join(os.path.dirname(retVal["Message"]), "cas.pem")
-            with open(casFile, "w") as fd:
-                result = transferClient.receiveFile(fd, "CAs")
-                if not result["OK"]:
-                    return result
-                return S_OK(casFile)
-        else:
+        if retVal["OK"]:
             return retVal
+
+        self.log.warn("Could not generate/find CA file", retVal["Message"])
+        # if we can not found the file, we return the directory, where the file should be
+        transferClient = self.__getTransferClient()
+        casFile = os.path.join(os.path.dirname(retVal["Message"]), "cas.pem")
+        with open(casFile, "w") as fd:
+            result = transferClient.receiveFile(fd, "CAs")
+            if not result["OK"]:
+                return result
+            return S_OK(casFile)
 
     def getCLRs(self):
         """This method can be used to create the CRLs. If the file can not be created,
@@ -183,14 +189,14 @@ class BundleDeliveryClient(Client):
         :return: S_OK(str)/S_ERROR()
         """
         retVal = Utilities.generateRevokedCertsFile()
-        if not retVal["OK"]:
-            # if we can not found the file, we return the directory, where the file should be
-            transferClient = self.__getTransferClient()
-            casFile = os.path.join(os.path.dirname(retVal["Message"]), "crls.pem")
-            with open(casFile, "w") as fd:
-                result = transferClient.receiveFile(fd, "CRLs")
-                if not result["OK"]:
-                    return result
-                return S_OK(casFile)
-        else:
+        if retVal["OK"]:
             return retVal
+
+        # if we can not found the file, we return the directory, where the file should be
+        transferClient = self.__getTransferClient()
+        casFile = os.path.join(os.path.dirname(retVal["Message"]), "crls.pem")
+        with open(casFile, "w") as fd:
+            result = transferClient.receiveFile(fd, "CRLs")
+            if not result["OK"]:
+                return result
+            return S_OK(casFile)
