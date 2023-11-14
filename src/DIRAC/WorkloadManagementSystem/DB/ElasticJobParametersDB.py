@@ -39,8 +39,7 @@ class ElasticJobParametersDB(ElasticDB):
         """Standard Constructor"""
 
         try:
-            section = getDatabaseSection("WorkloadManagement/ElasticJobParametersDB")
-            indexPrefix = gConfig.getValue(f"{section}/IndexPrefix", CSGlobals.getSetup()).lower()
+            indexPrefix = CSGlobals.getSetup().lower()
 
             # Connecting to the ES cluster
             super().__init__("WorkloadManagement/ElasticJobParametersDB", indexPrefix, parentLogger=parentLogger)
