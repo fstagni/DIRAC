@@ -352,7 +352,6 @@ class JobManagerHandlerMixin:
         )
         for jobID in validJobList:
             self.taskQueueDB.deleteJob(jobID)
-            # gJobDB.deleteJobFromQueue(jobID)
             result = self.jobDB.rescheduleJob(jobID)
             self.log.debug(str(result))
             if not result["OK"]:
