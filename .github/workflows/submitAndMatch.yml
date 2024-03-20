@@ -1,10 +1,6 @@
 name: submitAndMatch
 
-on:
-  push:
-    branches:
-      - 'integration'
-      - 'rel-v8r0'
+on: push
 
 jobs:
   submitAndMatch:

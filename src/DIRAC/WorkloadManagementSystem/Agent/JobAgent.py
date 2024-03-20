@@ -209,10 +209,12 @@ class JobAgent(AgentModule):
         # Check matcher information returned
         matcherParams = ["JDL", "Owner", "Group"]
         matcherInfo = jobRequest["Value"]
+        print(matcherInfo)
         jobID = str(matcherInfo["JobID"])
 
         self.jobs[jobID] = {}
         self.jobs[jobID]["JobReport"] = JobReport(jobID, f"{self.__class__.__name__}@{self.siteName}")
+        print(self.jobs)
 
         result = self._checkMatcherInfo(jobID, matcherInfo, matcherParams)
         if not result["OK"]:
