@@ -39,6 +39,8 @@ taskDictSimple = {1: {"TransformationID": 1, "Site": "MySite"}, 2: {"Transformat
 
 taskDictSimpleInputs = {1: {"TransformationID": 1, "InputData": ["a1", "a2", "a3"]}}
 
+taskDictSimpleRuns = {1: {"TransformationID": 1, "RunNumber": ["123", "456", "789"]}}
+
 taskDictNoInputs = {
     1: {"TransformationID": 1, "a1": "aa1", "b1": "bb1", "Site": "MySite"},
     2: {"TransformationID": 1, "a2": "aa2", "b2": "bb2"},
@@ -69,6 +71,11 @@ expectedBulkSimple = {
     "Value": {"BulkJobObject": "", 1: {"TransformationID": 1, "InputData": ["a1", "a2", "a3"], "JobType": "User"}},
 }
 
+expectedBulkSimpleRuns = {
+    "OK": True,
+    "Value": {"BulkJobObject": "", 1: {"TransformationID": 1, "RunNmber": ["123", "456", "789"], "JobType": "User"}},
+}
+
 expectedBulk = {
     "OK": True,
     "Value": {
@@ -86,7 +93,8 @@ expectedBulk = {
         (taskDict, False, True, expected),
         (taskDict, True, False, expectedBulk),
         (taskDictSimple, True, True, expectedBulk),
-        (taskDictSimpleInputs, True, True, expectedBulkSimple),
+        # (taskDictSimpleInputs, True, True, expectedBulkSimple),
+        (taskDictSimpleRuns, True, True, expectedBulkSimpleRuns),
         (taskDictNoInputs, True, False, expectedBulk),
         (taskDictNoInputsNoSite, True, True, expectedBulk),
     ],

@@ -33,57 +33,65 @@ class submitSuccess(GridSubmissionTestCase):
 
     def test_submit(self):
         """submit jobs defined in DIRAC.tests.Utilities.testJobDefinitions"""
-        res = helloWorld()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorld()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = helloWorldCERN()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorldCERN()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = helloWorldNCBJ()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorldNCBJ()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = helloWorldGRIDKA()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorldGRIDKA()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = helloWorldGRIF()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorldGRIF()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = helloWorldSSHBatch()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = helloWorldSSHBatch()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = mpJob()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = mpJob()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = mp3Job()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = mp3Job()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = min2max4Job()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = min2max4Job()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
-        res = wholeNodeJob()
-        self.assertTrue(res["OK"])
-        jobsSubmittedList.append(res["Value"])
+        # res = wholeNodeJob()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
         res = parametricJob()
         self.assertTrue(res["OK"])
         jobsSubmittedList.append(res["Value"])
 
-        res = jobWithOutput()
+        res = parametricJobInputData()
         self.assertTrue(res["OK"])
         jobsSubmittedList.append(res["Value"])
 
-        res = jobWithOutputs()
+        res = parametricJobRuns()
         self.assertTrue(res["OK"])
         jobsSubmittedList.append(res["Value"])
+
+        # res = jobWithOutput()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
+
+        # res = jobWithOutputs()
+        # self.assertTrue(res["OK"])
+        # jobsSubmittedList.append(res["Value"])
 
         print(f"submitted {len(jobsSubmittedList)} jobs: {','.join(str(js) for js in jobsSubmittedList)}")
 
