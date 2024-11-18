@@ -70,8 +70,14 @@ def main():
 
     gLogger.notice(f"Estimated CPU power is {cpuPower:.1f} HS06")
 
+    # Now evaluating a possible alternative CPU Power
+    cpuPower_alternative = cpuPower
+    if Operations().getValue("JobScheduling/EnableCPUNormalizationAlternative", False):
+        cpuPower_alternative = # insert here the alternative CPU Power evaluation
+
     if update:
         gConfig.setOptionValue("/LocalSite/CPUNormalizationFactor", cpuPower)
+        gConfig.setOptionValue("/LocalSite/CPUNormalizationFactor_alternative", cpuPower_alternative)
 
         if configFile:
             gConfig.dumpLocalCFGToFile(configFile)
