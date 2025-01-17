@@ -253,7 +253,7 @@ def prepare_environment(
     typer.secho("Running docker compose to create containers", fg=c.GREEN)
     with _gen_docker_compose(modules, diracx_dist_dir=diracx_dist_dir) as docker_compose_fn:
         subprocess.run(
-            ["docker", "compose", "-f", docker_compose_fn, "up", "-d", "dirac-server", "dirac-client", "dirac-pilot"]
+            ["docker", "compose", "-f", docker_compose_fn, "up", "-d", "dirac-server", "dirac-client", "dirac-pilot", "rucio-server"]
             + extra_services,
             check=True,
             env=docker_compose_env,
@@ -570,7 +570,7 @@ def _gen_docker_compose(modules, *, diracx_dist_dir=None):
     input_fn = Path(__file__).parent / "tests/CI/docker-compose.yml"
     docker_compose = yaml.safe_load(input_fn.read_text())
     # diracx-wait-for-db needs the volume to be able to run the witing script
-    for ctn in ("dirac-server", "dirac-client", "dirac-pilot", "diracx-wait-for-db"):
+    for ctn in ("dirac-server", "dirac-client", "dirac-pilot", "diracx-wait-for-db", "rucio-wait-for-db"):
         if "volumes" not in docker_compose["services"][ctn]:
             docker_compose["services"][ctn]["volumes"] = []
     volumes = [f"{path}:/home/dirac/LocalRepo/ALTERNATIVE_MODULES/{name}" for name, path in modules.items()]
@@ -579,6 +579,7 @@ def _gen_docker_compose(modules, *, diracx_dist_dir=None):
     docker_compose["services"]["dirac-client"]["volumes"].extend(volumes[:])
     docker_compose["services"]["dirac-pilot"]["volumes"].extend(volumes[:])
     docker_compose["services"]["diracx-wait-for-db"]["volumes"].extend(volumes[:])
+    docker_compose["services"]["rucio-wait-for-db"]["volumes"].extend(volumes[:])
 
     module_configs = _load_module_configs(modules)
     if diracx_dist_dir is not None:
