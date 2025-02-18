@@ -164,12 +164,6 @@ class TokenManagerHandlerMixin:
             return S_OK(False)
         if Properties.LIMITED_DELEGATION in credDict["properties"]:
             return S_OK(True)
-        if Properties.PRIVATE_LIMITED_DELEGATION in credDict["properties"]:
-            if credDict["DN"] != requestedUserDN:
-                return S_ERROR("You are not allowed to download any token")
-            if Properties.PRIVATE_LIMITED_DELEGATION not in Registry.getPropertiesForGroup(requestedUserGroup):
-                return S_ERROR("You can't download tokens for that group")
-            return S_OK(True)
         # Not authorized!
         return S_ERROR("You can't get tokens!")
 
@@ -189,7 +183,6 @@ class TokenManagerHandlerMixin:
         * Properties:
             * FullDelegation <- permits full delegation of tokens
             * LimitedDelegation <- permits downloading only limited tokens
-            * PrivateLimitedDelegation <- permits downloading only limited tokens for one self
 
         :param username: user name
         :param userGroup: user group

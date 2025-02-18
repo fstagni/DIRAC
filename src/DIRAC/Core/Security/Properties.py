@@ -40,8 +40,6 @@ class SecurityProperty(str, Enum):
     FULL_DELEGATION = "FullDelegation"
     #: Allow getting only limited proxies (ie. pilots)
     LIMITED_DELEGATION = "LimitedDelegation"
-    #: Allow getting only limited proxies for one self
-    PRIVATE_LIMITED_DELEGATION = "PrivateLimitedDelegation"
     #: Allow managing proxies
     PROXY_MANAGEMENT = "ProxyManagement"
     #: Allow managing all productions
@@ -152,7 +150,6 @@ USER_MANAGER = SecurityProperty.USER_MANAGER.value
 OPERATOR = SecurityProperty.OPERATOR.value
 FULL_DELEGATION = SecurityProperty.FULL_DELEGATION.value
 LIMITED_DELEGATION = SecurityProperty.LIMITED_DELEGATION.value
-PRIVATE_LIMITED_DELEGATION = SecurityProperty.PRIVATE_LIMITED_DELEGATION.value
 PROXY_MANAGEMENT = SecurityProperty.PROXY_MANAGEMENT.value
 PRODUCTION_MANAGEMENT = SecurityProperty.PRODUCTION_MANAGEMENT.value
 PPG_AUTHORITY = SecurityProperty.PPG_AUTHORITY.value

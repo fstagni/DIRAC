@@ -144,12 +144,6 @@ class ProxyManagerHandlerMixin:
             return S_OK(False)
         if Properties.LIMITED_DELEGATION in credDict["properties"]:
             return S_OK(True)
-        if Properties.PRIVATE_LIMITED_DELEGATION in credDict["properties"]:
-            if credDict["DN"] != requestedUserDN:
-                return S_ERROR("You are not allowed to download any proxy")
-            if Properties.PRIVATE_LIMITED_DELEGATION not in Registry.getPropertiesForGroup(requestedUserGroup):
-                return S_ERROR("You can't download proxies for that group")
-            return S_OK(True)
         # Not authorized!
         return S_ERROR("You can't get proxies!")
 
@@ -175,7 +169,6 @@ class ProxyManagerHandlerMixin:
           * Properties:
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
         """
         credDict = self.getRemoteCredentials()
 
@@ -223,7 +216,6 @@ class ProxyManagerHandlerMixin:
           * Properties :
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
         """
         credDict = self.getRemoteCredentials()
 
@@ -367,7 +359,6 @@ class ProxyManagerHandlerMixin:
           * Properties:
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
         """
         credDict = self.getRemoteCredentials()
         result = self.__proxyDB.useToken(token, credDict["DN"], credDict["group"])
@@ -396,7 +387,6 @@ class ProxyManagerHandlerMixin:
           * Properties :
               * FullDelegation <- permits full delegation of proxies
               * LimitedDelegation <- permits downloading only limited proxies
-              * PrivateLimitedDelegation <- permits downloading only limited proxies for one self
         """
         credDict = self.getRemoteCredentials()
         result = self.__proxyDB.useToken(token, credDict["DN"], credDict["group"])

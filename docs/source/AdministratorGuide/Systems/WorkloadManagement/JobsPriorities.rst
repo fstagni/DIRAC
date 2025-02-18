@@ -55,7 +55,6 @@ by setting the *JobShare* option in the Configuration, in the groups definitions
       ...
       Users += zzz
       Properties = NormalUser
-      Properties += PrivateLimitedDelegation
       JobShare = 10000
 
     }
