@@ -1,15 +1,15 @@
-""" Test class for Job Agent
-"""
+"""Test class for TestRunner"""
 
 # imports
-import pytest
 import os
+
+import pytest
+from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from diraccfg import CFG
 
 # DIRAC Components
-from DIRAC import gLogger, gConfig, S_OK, S_ERROR
+from DIRAC import S_ERROR, S_OK, gConfig, gLogger
 from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
-from DIRAC.Core.Security.X509Chain import X509Chain  # pylint: disable=import-error
 from DIRAC.WorkloadManagementSystem.Utilities.RemoteRunner import RemoteRunner
 
 gLogger.setLevel("DEBUG")
@@ -60,11 +60,16 @@ def test__wrapCommand(command, workingDirectory, expectedContent):
         (1, 1, True, 1),
         (2, 2, True, 2),
         (1, 2, True, 1),
+        (
+            1,
+            0,
+            True,
+            1,
+        ),  # if ceNumberOfProcessors is 0, it will be interpreted as needing local evaluation. That will return 1.
         # CE has less processors than the payload requests
         (2, 1, False, "Not enough processors to execute the command"),
         # Specific case: we should not have 0
         (0, 1, False, "Inappropriate NumberOfProcessors value"),
-        (1, 0, False, "Inappropriate NumberOfProcessors value"),
         (-4, 1, False, "Inappropriate NumberOfProcessors value"),
         (1, -4, False, "Inappropriate NumberOfProcessors value"),
         (0, 0, False, "Inappropriate NumberOfProcessors value"),
