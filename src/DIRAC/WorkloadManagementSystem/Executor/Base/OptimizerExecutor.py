@@ -1,12 +1,13 @@
 """ Base class for all the executor modules for Jobs Optimization
 """
-import threading
 import datetime  # Because eval(valenc) might require it
-from DIRAC import S_OK, S_ERROR
-from DIRAC.Core.Utilities import DEncode, List
+import threading
+
+from DIRAC import S_ERROR, S_OK
 from DIRAC.Core.Base.ExecutorModule import ExecutorModule
+from DIRAC.Core.Utilities import DEncode, List
+from DIRAC.WorkloadManagementSystem.Client import JobMinorStatus, JobStatus
 from DIRAC.WorkloadManagementSystem.Client.JobState.CachedJobState import CachedJobState
-from DIRAC.WorkloadManagementSystem.Client import JobStatus, JobMinorStatus
 
 
 class OptimizerExecutor(ExecutorModule):

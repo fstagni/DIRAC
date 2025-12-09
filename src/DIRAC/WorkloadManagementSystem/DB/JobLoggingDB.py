@@ -11,7 +11,7 @@ import datetime
 from DIRAC import S_ERROR, S_OK
 from DIRAC.Core.Base.DB import DB
 from DIRAC.Core.Utilities import TimeUtilities
-from DIRAC.Core.Utilities.ReturnValues import returnValueOrRaise, convertToReturnValue
+from DIRAC.Core.Utilities.ReturnValues import convertToReturnValue, returnValueOrRaise
 from DIRAC.FrameworkSystem.Client.Logger import contextLogger
 
 MAGIC_EPOC_NUMBER = 1270000000

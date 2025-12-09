@@ -3,16 +3,16 @@
 # pylint: disable=protected-access, missing-docstring
 
 from unittest.mock import MagicMock
+
 import pytest
 
 from DIRAC import gLogger
-
 from DIRAC.WorkloadManagementSystem.Client.JobState.CachedJobState import CachedJobState
 from DIRAC.WorkloadManagementSystem.Client.JobState.JobManifest import JobManifest
+from DIRAC.WorkloadManagementSystem.Executor.InputData import InputData
 
 # sut
 from DIRAC.WorkloadManagementSystem.Executor.JobScheduling import JobScheduling
-from DIRAC.WorkloadManagementSystem.Executor.InputData import InputData
 
 mockNone = MagicMock()
 mockNone.return_value = None

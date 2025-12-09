@@ -1,6 +1,6 @@
 from DIRAC import S_ERROR, S_OK, gLogger
-from DIRAC.WorkloadManagementSystem.Client import JobStatus
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
+from DIRAC.WorkloadManagementSystem.Client import JobStatus
 from DIRAC.WorkloadManagementSystem.Service.JobPolicy import RIGHT_DELETE, RIGHT_KILL
 from DIRAC.WorkloadManagementSystem.Utilities.jobAdministration import _filterJobStateTransition
 

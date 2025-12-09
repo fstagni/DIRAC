@@ -2,6 +2,7 @@ import math
 from typing import Any
 
 import pytest
+
 from DIRAC.WorkloadManagementSystem.DB.TaskQueueDB import TQ_MIN_SHARE, calculate_priority
 
 

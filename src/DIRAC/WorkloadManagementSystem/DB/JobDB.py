@@ -26,10 +26,10 @@ from DIRAC.Core.Utilities.DErrno import EWMSJMAN, EWMSSUBM, cmpError
 from DIRAC.Core.Utilities.ReturnValues import (
     S_ERROR,
     S_OK,
+    DReturnType,
+    SErrorException,
     convertToReturnValue,
     returnValueOrRaise,
-    SErrorException,
-    DReturnType,
 )
 from DIRAC.FrameworkSystem.Client.Logger import contextLogger
 from DIRAC.ResourceStatusSystem.Client.SiteStatus import SiteStatus
