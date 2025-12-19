@@ -90,7 +90,11 @@ class JobStateUpdateClient(FutureClient):
             with DiracXClient() as api:
                 api.jobs.patch_metadata({jobID: {name: value}})
         except Exception as e:
+<<<<<<< HEAD
             print(f"Exception when setting job parameter: {e}")
+=======
+            print(f"Exception when setting job parameter: {e} - Parameters were: {name}={value}")
+>>>>>>> aldbr/feat-jobwrapper-set-log-level
             raise
 
     @stripValueIfOK
@@ -100,7 +104,11 @@ class JobStateUpdateClient(FutureClient):
             with DiracXClient() as api:
                 api.jobs.patch_metadata({jobID: {k: v for k, v in parameters}})
         except Exception as e:
+<<<<<<< HEAD
             print(f"Exception when setting job parameters: {e}")
+=======
+            print(f"Exception when setting job parameters: {e} - Parameters were: {parameters}")
+>>>>>>> aldbr/feat-jobwrapper-set-log-level
             raise
 
     @stripValueIfOK
