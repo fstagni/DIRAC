@@ -86,14 +86,22 @@ class JobStateUpdateClient(FutureClient):
     @stripValueIfOK
     @convertToReturnValue
     def setJobParameter(self, jobID: str | int, name: str, value: str):
-        with DiracXClient() as api:
-            api.jobs.patch_metadata({jobID: {name: value}})
+        try:
+            with DiracXClient() as api:
+                api.jobs.patch_metadata({jobID: {name: value}})
+        except Exception as e:
+            print(f"Exception when setting job parameter: {e}")
+            raise
 
     @stripValueIfOK
     @convertToReturnValue
     def setJobParameters(self, jobID: str | int, parameters: list):
-        with DiracXClient() as api:
-            api.jobs.patch_metadata({jobID: {k: v for k, v in parameters}})
+        try:
+            with DiracXClient() as api:
+                api.jobs.patch_metadata({jobID: {k: v for k, v in parameters}})
+        except Exception as e:
+            print(f"Exception when setting job parameters: {e}")
+            raise
 
     @stripValueIfOK
     @convertToReturnValue
